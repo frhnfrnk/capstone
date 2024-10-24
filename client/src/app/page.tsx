@@ -2,22 +2,29 @@
 
 import { useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls,  Environment  } from "@react-three/drei";
 import { HandModel } from "@/components/HandModel";
 import Lights from "@/components/Light";
 
 export default function Home() {
-  const [animation, setAnimation] = useState("Thumb Flexion"); // Set default animation
+  const [animation, setAnimation] = useState("Stop Animation"); // Set default animation
 
   return (
     <div style={{ height: "100vh", backgroundColor: "#34495E" }}>
-      <Canvas camera={{ position: [0, 2, 5] }}>
+      <Canvas camera={{ position: [0, 0, 15] }}>
         <HandModel
-          scale={1.3}
-          position={[0, -1.5, 0]}
+          scale={3}
+          position={[0, -2, 1.8]}
           animationName={animation}
         />
         <Lights />
+        <ambientLight intensity={0.6} color='white' /> 
+        <directionalLight color="white" position={[0, 5, 10]} intensity={1.2} /> 
+        <spotLight position={[5, 5, 5]} angle={0.3} intensity={1} penumbra={0.5} castShadow /> 
+        <pointLight position={[-5, 5, 5]} intensity={0.7} /> 
+        <meshStandardMaterial color='brown' roughness={0.7} metalness={0.1} />
+        <Environment preset="sunset" />
+
         {/* <OrbitControls /> */}
         {/* <axesHelper args={[5]} /> */}
       </Canvas>
