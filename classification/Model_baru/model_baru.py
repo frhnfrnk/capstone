@@ -1,3 +1,4 @@
+#Library
 import pandas as pd
 import numpy as np
 import mne
@@ -5,18 +6,11 @@ import os
 import pywt
 import joblib
 from mne.decoding import CSP
-from sklearn import preprocessing
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import StratifiedKFold
-from mne.decoding import CSP
-from sklearn.model_selection import GridSearchCV, train_test_split
 
-#Read data
-df =pd.read_csv("C:/Users/Dhiyaa Amalia/capstone/classification/dataset/hook_kiri.csv", delimiter=';', skiprows=1)
+# Read data
+df = pd.read_csv("C:/Users/Dhiyaa Amalia/capstone/classification/DataTesting/naren_test_open_1mnt.csv", delimiter=';', skiprows=1)
 
 # Pilih kolom yang relevan
 column = ["CH1","CH2", 	"CH3",	"CH4"]
@@ -76,7 +70,7 @@ def feature_bands(x):
 wpd_data = feature_bands(data)
 #print(wpd_data.shape)  
 
-path = os.path.abspath('classification/Model')
+path = os.path.abspath('classification/Model_baru')
 
 Csp_list = [joblib.load(os.path.join(path, f'csp_{i}.pkl')) for i in range(8)]
 ss = joblib.load(os.path.join(path, 'scaler.pkl'))
@@ -88,13 +82,12 @@ def inference(new_data, Csp_list, ss, svms):
     )
 
     scaled_data = ss.transform(transformed_data)
-    prob_sum = np.zeros((len(svms[0].classes_)))
-
-    for i, svm in enumerate(svms):
-        prob_sum += np.mean(svm.predict_proba(scaled_data), axis=0)  
+    prob_sum = np.zeros(len(svms[0].classes_))
+    for svm in svms:
+        prob_sum += np.mean(svm.predict_proba(scaled_data), axis=0)
 
     predicted_class_idx = np.argmax(prob_sum)
-    classes = ['fist', 'hook', 'index', 'open', 'thumb']
+    classes = ['Fist', 'Hook', 'Index', 'Open', 'Thumb']
     
     return classes[predicted_class_idx]
 
