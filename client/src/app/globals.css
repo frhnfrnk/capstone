@@ -25,3 +25,30 @@ body {
     text-wrap: balance;
   }
 }
+
+/* styles/globals.css */
+.swiper-button-next,
+.swiper-button-prev {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.7); /* Warna latar belakang panah */
+  border-radius: 50%; /* Membuat panah berbentuk bulat */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 8px;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background-color: rgba(
+    255,
+    255,
+    255,
+    1
+  ); /* Warna latar belakang saat hover */
+}
