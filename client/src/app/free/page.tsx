@@ -8,6 +8,7 @@ import Lights from "@/components/Light";
 import { useSearchParams } from "next/navigation";
 import ModalGuide from "@/components/ModalMainGuide";
 import { io } from "socket.io-client";
+import Loading from "@/components/Loading";
 
 export default function Home() {
   // const searchParams = useSearchParams();
@@ -54,7 +55,13 @@ export default function Home() {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center h-screen">
+          <Loading />
+        </div>
+      }
+    >
       {" "}
       {/* Add Suspense here */}
       <div className="bg-gray-100" style={{ height: "100vh" }}>
