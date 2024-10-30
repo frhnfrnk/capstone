@@ -4,15 +4,33 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
 
-const ModalCalibrationGuide = ({ setIsOpen, isOpen, setUsername }: any) => {
+const ModalCalibrationGuide = ({
+  setIsOpen,
+  isOpen,
+  setUsername,
+  setTypes,
+}: any) => {
   if (!isOpen) return null;
   const [name, setName] = useState("");
   const [isAgree, setIsAgree] = useState(false);
   const [canStart, setCanStart] = useState(false);
+  const [selectedMovements, setSelectedMovements] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const movements = ["Fist", "Hook", "Open", "Index", "Thumb"];
 
   const onClose = () => {
     setUsername(name);
+    setTypes(selectedMovements);
     setIsOpen(false);
+  };
+
+  const handleMovementToggle = (movement: string) => {
+    if (selectedMovements.includes(movement)) {
+      setSelectedMovements(selectedMovements.filter((m) => m !== movement));
+    } else {
+      setSelectedMovements([...selectedMovements, movement]);
+    }
   };
 
   const slides = [
@@ -109,37 +127,62 @@ const ModalCalibrationGuide = ({ setIsOpen, isOpen, setUsername }: any) => {
         <>
           <div className="h-full flex flex-col justify-center items-center px-5">
             <div className="flex flex-col items-center gap-5 w-full">
-              <input
-                type="text"
-                placeholder="Masukkan nama Anda"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg"
-              />
+              {/* Chips untuk memilih gerakan */}
+              <div className="flex flex-wrap gap-3 justify-center">
+                <p>
+                  Pilih gerakan yang akan Anda lakukan selama kalibrasi (minimal
+                  2 gerakan):
+                </p>
+                {movements.map((movement) => (
+                  <button
+                    key={movement}
+                    onClick={() => handleMovementToggle(movement)}
+                    className={`px-4 py-1 rounded-xl border ${
+                      selectedMovements.includes(movement)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {movement}
+                  </button>
+                ))}
+              </div>
 
               {/* Checkbox untuk persetujuan */}
               <div className="flex items-center justify-center gap-5">
-                <input
-                  type="checkbox"
-                  onChange={(e) => setIsAgree(e.target.checked)}
-                  checked={isAgree}
-                  className="form-checkbox"
-                />
-                <label className="text-lg text-gray-500 text-center">
+                <label className="text-lg text-gray-500 text-center flex gap-2 items-center userSelect">
+                  <input
+                    type="checkbox"
+                    onChange={(e) => setIsAgree(e.target.checked)}
+                    checked={isAgree}
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                  />
                   Saya telah membaca dan memahami panduan kalibrasi.
                 </label>
               </div>
 
               {/* Tombol untuk mulai */}
-              <button
-                onClick={onClose}
-                disabled={!canStart}
-                className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out
-                disabled:opacity-50 disabled:cursor-not-allowed
-                "
-              >
-                Mulai
-              </button>
+              <div className="flex gap-5 items-center justify-center">
+                <input
+                  type="text"
+                  placeholder="Masukkan nama Anda"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="max-w-xs px-4 py-2 border border-gray-300 rounded-lg"
+                />
+                <button
+                  onClick={onClose}
+                  disabled={!canStart}
+                  className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out
+          disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Mulai
+                </button>
+              </div>
+
+              {errorMessage && (
+                <p className="text-red-500 text-sm">{errorMessage}</p>
+              )}
             </div>
           </div>
         </>
@@ -148,9 +191,16 @@ const ModalCalibrationGuide = ({ setIsOpen, isOpen, setUsername }: any) => {
   ];
 
   useEffect(() => {
-    if (name && isAgree) setCanStart(true);
-    else setCanStart(false);
-  }, [name, isAgree]);
+    if (name && isAgree) {
+      if (selectedMovements.length < 2) {
+        setErrorMessage("Pilih minimal 2 gerakan");
+        setCanStart(false);
+      } else {
+        setErrorMessage("");
+        setCanStart(true);
+      }
+    } else setCanStart(false);
+  }, [name, isAgree, selectedMovements]);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">

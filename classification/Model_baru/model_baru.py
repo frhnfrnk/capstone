@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 # Read data
-df = pd.read_csv("C:/Users/Dhiyaa Amalia/capstone/classification/DataTesting/naren_test_open_1mnt.csv", delimiter=';', skiprows=1)
+df = pd.read_csv("../DataTesting/naren_test_open_1mnt.csv", delimiter=';', skiprows=1)
 
 # Pilih kolom yang relevan
 column = ["CH1","CH2", 	"CH3",	"CH4"]
@@ -36,10 +36,13 @@ ch_names = ["C1","C2","C3","C4"]
 info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
 raw = mne.io.RawArray(df.T, info)
 
+# Buat event untuk data EEG
+
+
 # Filter data
 raw.filter(0.5, 30., fir_design='firwin')
-events = mne.make_fixed_length_events(raw, duration=1.0)
-epochs = mne.Epochs(raw, events, tmin=0, tmax=1, proj=True, baseline=None, preload=True)
+events = mne.make_fixed_length_events(raw, duration=5.0)
+epochs = mne.Epochs(raw, events, tmin=-0.2, tmax=0.5, proj=True, baseline=None, preload=True)
 data = epochs.get_data(copy = True)
 #print(data.shape)
 
