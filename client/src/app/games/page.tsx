@@ -19,7 +19,7 @@ export default function Home() {
   const [start, setStart] = useState(false);
   const [target, setTarget] = useState<string>("");
   const [indexTarget, setIndexTarget] = useState(0);
-  const [newTarget, setNewTarget] = useState([]);
+  const [newTarget, setNewTarget] = useState<string[]>([]);
   const [done, setDone] = useState(false);
   const [stop, setStop] = useState(true);
   const [tryCount, setTryCount] = useState(0);
@@ -39,8 +39,11 @@ export default function Home() {
     const socket = io(SOCKET_SERVER_URL);
 
     socket.on("classification_progress", (message) => {
-      console.log(message);
       setAnimation(message);
+      setResultClassify({
+        result: message,
+        score: Math.floor(Math.random() * 100),
+      });
     });
 
     socket.on("classification_stopped", () => {
@@ -73,7 +76,7 @@ export default function Home() {
     setStart(false);
   };
 
-  const shuffleArray = (array: any) => {
+  const shuffleArray = (array: string[]): string[] => {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1)); // Random index
       [array[i], array[j]] = [array[j], array[i]]; // Swap elements
