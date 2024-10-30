@@ -3,14 +3,24 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
+interface User {
+  id: string; // Assuming user has an id, modify as necessary
+  name: string; // Assuming user has a name, modify as necessary
+}
+
+interface ConnectionState {
+  board: string;
+  error: string;
+  success: boolean;
+}
+
 export default function Home() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState("");
-  const [userExist, setUserExist] = useState([]);
-  const [mode, setMode] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [connection, setConnection] = useState({
+  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [userExist, setUserExist] = useState<User[]>([]);
+  const [mode, setMode] = useState<string>("");
+  const [connection, setConnection] = useState<ConnectionState>({
     board: "",
     error: "",
     success: false,
@@ -18,16 +28,19 @@ export default function Home() {
 
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
-  const handleOpenModal = ({ mode }: any) => {
+  const handleOpenModal = (mode: string) => {
     getUserExist();
     setIsModalOpen(true);
     setMode(mode);
   };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setMode("");
   };
-  const handleUserChange = (e: any) => setSelectedUser(e.target.value);
+
+  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
+    setSelectedUser(e.target.value);
 
   const checkConnection = () => {
     axios
@@ -60,11 +73,12 @@ export default function Home() {
   };
 
   const handleSelectUser = () => {
-    setIsLoading(true);
     if (selectedUser) {
       if (mode === "Games") {
         router.push(`/games/${selectedUser}`);
-      } else router.push(`/free?user=${selectedUser}`);
+      } else {
+        router.push(`/free?user=${selectedUser}`);
+      }
     }
   };
 
@@ -82,13 +96,13 @@ export default function Home() {
       </p>
       <div className="flex space-x-4 mb-2">
         <button
-          onClick={() => handleOpenModal({ mode: "Games" })}
+          onClick={() => handleOpenModal("Games")}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out"
         >
           Games Mode
         </button>
         <button
-          onClick={() => handleOpenModal({ mode: "Free" })}
+          onClick={() => handleOpenModal("Free")}
           className="px-6 py-3 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition duration-300 ease-in-out"
         >
           Free Mode
@@ -119,9 +133,9 @@ export default function Home() {
               className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none"
             >
               <option value="">Pilih User</option>
-              {userExist.map((user: any, index: any) => (
-                <option className="p-2" key={index} value={user}>
-                  {user}
+              {userExist.map((user) => (
+                <option className="p-2" key={user.id} value={user.id}>
+                  {user.name}
                 </option>
               ))}
             </select>
@@ -141,9 +155,7 @@ export default function Home() {
                 Batal
               </button>
               <button
-                onClick={() => {
-                  handleSelectUser();
-                }}
+                onClick={handleSelectUser}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Pilih

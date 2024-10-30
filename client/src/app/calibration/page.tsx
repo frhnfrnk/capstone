@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 
 const Calibration = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [name, setName] = useState("");
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -14,10 +14,6 @@ const Calibration = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
-
-  useEffect(() => {
-    setIsOpen(true);
-  }, []);
 
   useEffect(() => {
     const video = types.map((type) => {
@@ -35,13 +31,14 @@ const Calibration = () => {
     });
 
     socket.on("calibration_ended", (time) => {
+      setElapsedTime(time);
       console.log("Calibration ended. Time taken:", time);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [SOCKET_SERVER_URL]);
 
   const handleStart = () => {
     if (videoRef.current) {

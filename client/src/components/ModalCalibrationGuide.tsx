@@ -4,12 +4,19 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
 
+interface ModalCalibrationGuideProps {
+  setIsOpen: (value: boolean) => void;
+  isOpen: boolean;
+  setUsername: (value: string) => void;
+  setTypes: (value: string[]) => void;
+}
+
 const ModalCalibrationGuide = ({
   setIsOpen,
   isOpen,
   setUsername,
   setTypes,
-}: any) => {
+}: ModalCalibrationGuideProps) => {
   if (!isOpen) return null;
   const [name, setName] = useState("");
   const [isAgree, setIsAgree] = useState(false);

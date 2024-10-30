@@ -4,7 +4,13 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
 
-const ModalGuide = ({ setIsOpen, isOpen, start }: any) => {
+interface ModalGuideProps {
+  setIsOpen: (value: boolean) => void;
+  isOpen: boolean;
+  start: () => void;
+}
+
+const ModalGuide = ({ setIsOpen, isOpen, start }: ModalGuideProps) => {
   if (!isOpen) return null;
 
   const onClose = () => {
