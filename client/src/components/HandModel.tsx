@@ -16,7 +16,7 @@ interface HandModelProps {
 }
 
 export function HandModel({ animationName, ...props }: HandModelProps) {
-  const { scene, animations } = useGLTF("/models/fix.glb");
+  const { scene, animations } = useGLTF("/models/modelfix2glb.glb");
   const { actions } = useAnimations(animations, scene);
   const activeActionRef = useRef<AnimationAction | null>(null);
 

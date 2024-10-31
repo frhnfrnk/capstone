@@ -68,7 +68,7 @@ export default function Home() {
         <Canvas camera={{ position: [0, 0, 15] }}>
           <HandModel
             scale={2.5}
-            position={[0, -1, 1.8]}
+            position={[0, -6, 1.8]}
             animationName={animation}
           />
           <Lights />

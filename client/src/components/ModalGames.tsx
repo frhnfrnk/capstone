@@ -6,8 +6,8 @@ interface ModalGamesProps {
   prevScore: number;
   setIsOpen: (value: boolean) => void;
   isOpen: boolean;
-  start: () => void;
   tryCount: number;
+  start: () => void;
 }
 
 const ModalGames = ({
@@ -34,9 +34,10 @@ const ModalGames = ({
 
   useEffect(() => {
     if (isOpen) {
+      setCountdown(5);
       const timer = setInterval(() => {
         setCountdown((prev) => {
-          if (prev <= 1) {
+          if (prev <= 0) {
             clearInterval(timer);
             setIsOpen(false);
             start();
@@ -51,8 +52,6 @@ const ModalGames = ({
   }, [isOpen, setIsOpen]);
 
   if (!isOpen) return null;
-
-  console.log(nextTarget);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
