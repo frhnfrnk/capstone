@@ -59,9 +59,9 @@ export default function Home() {
     });
 
     return () => {
-      newSocket.disconnect(); // Clean up the socket connection on unmount
+      newSocket.disconnect();
     };
-  }, [SOCKET_SERVER_URL]); // Depend on the URL
+  }, [SOCKET_SERVER_URL]);
 
   const startClassify = () => {
     if (socket) {
@@ -140,7 +140,7 @@ export default function Home() {
         <Canvas camera={{ position: [0, 0, 15] }}>
           <HandModel
             scale={2.5}
-            position={[0, -2, 1.8]}
+            position={[0, -6, 1.8]}
             animationName={animation}
           />
           <Lights />

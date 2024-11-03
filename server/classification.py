@@ -1,19 +1,29 @@
 from flask import Blueprint
-from flask_socketio import emit, send
+from flask_socketio import emit
 import time
 import random
 
 classification = Blueprint('classification', __name__, url_prefix='/api/classification')
 
-play = True
+play = False
 
 def classification_events(socketio):
     @socketio.on('start_classification')
     def handle_start_classification():
         global play
-        data = ["Genggam", "Hook Fist", "Index Flexion", "Open", "Thumb Flexion"]
-        while play:
-            message = random.choice(data)
+        if play:
+            return
+        
+        data = ["Fist", "Hook", "Open", "Thumb", "Index"]
+        play = True
+        accuration = random.randint(20, 99)
+        time.sleep(5)  
+
+        while play: 
+            message = {
+                "data": random.choice(data),
+                "accuration": accuration
+            }
             emit('classification_progress', message, broadcast=True)
             time.sleep(5)
 

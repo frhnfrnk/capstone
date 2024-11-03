@@ -2,7 +2,7 @@
 
 import ModalCalibrationGuide from "@/components/ModalCalibrationGuide";
 import { useEffect, useState, useRef } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 const Calibration = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -35,6 +35,10 @@ const Calibration = () => {
       console.log("Calibration ended. Time taken:", time);
     });
 
+    socket.on("calibration_progress", () => {
+      console.log("Calibration has been progressed");
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -45,10 +49,13 @@ const Calibration = () => {
       videoRef.current.play().catch((error) => {
         console.error("Error attempting to play the video:", error);
       });
-
-      const socket = io(SOCKET_SERVER_URL);
-      socket.emit("start_calibration");
     }
+    const socket = io(SOCKET_SERVER_URL);
+    const message = {
+      time: 5,
+      nama: name,
+    };
+    socket.emit("start_calibration", message);
   };
 
   const handleVideoEnded = () => {
@@ -66,7 +73,6 @@ const Calibration = () => {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         setUsername={setName}
-        setTypes={setTypes}
       />
 
       <div className="h-screen flex flex-col justify-center items-center bg-gray-100">

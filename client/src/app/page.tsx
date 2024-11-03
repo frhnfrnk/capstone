@@ -18,7 +18,7 @@ export default function Home() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>("");
-  const [userExist, setUserExist] = useState<User[]>([]);
+  const [userExist, setUserExist] = useState([]);
   const [mode, setMode] = useState<string>("");
   const [connection, setConnection] = useState<ConnectionState>({
     board: "",
@@ -75,7 +75,7 @@ export default function Home() {
   const handleSelectUser = () => {
     if (selectedUser) {
       if (mode === "Games") {
-        router.push(`/games/${selectedUser}`);
+        router.push(`/games?user=${selectedUser}`);
       } else {
         router.push(`/free?user=${selectedUser}`);
       }
@@ -83,7 +83,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    checkConnection();
+    if (!connection.success) {
+      checkConnection();
+    }
   }, []);
 
   return (
@@ -115,6 +117,9 @@ export default function Home() {
           {connection.success ? connection.board : "Not Connected"}
         </span>
       </p>
+      {!connection.success && (
+        <p className="text-red-500">{connection.error}</p>
+      )}
 
       {/* Modal */}
       {isModalOpen && (
@@ -133,9 +138,9 @@ export default function Home() {
               className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none"
             >
               <option value="">Pilih User</option>
-              {userExist.map((user) => (
-                <option className="p-2" key={user.id} value={user.id}>
-                  {user.name}
+              {userExist.map((user, index) => (
+                <option className="p-2" key={index} value={user}>
+                  {user}
                 </option>
               ))}
             </select>

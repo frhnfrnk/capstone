@@ -8,36 +8,22 @@ interface ModalCalibrationGuideProps {
   setIsOpen: (value: boolean) => void;
   isOpen: boolean;
   setUsername: (value: string) => void;
-  setTypes: (value: string[]) => void;
 }
 
 const ModalCalibrationGuide = ({
   setIsOpen,
   isOpen,
   setUsername,
-  setTypes,
 }: ModalCalibrationGuideProps) => {
   if (!isOpen) return null;
   const [name, setName] = useState("");
   const [isAgree, setIsAgree] = useState(false);
   const [canStart, setCanStart] = useState(false);
-  const [selectedMovements, setSelectedMovements] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
-
-  const movements = ["Fist", "Hook", "Open", "Index", "Thumb"];
 
   const onClose = () => {
     setUsername(name);
-    setTypes(selectedMovements);
     setIsOpen(false);
-  };
-
-  const handleMovementToggle = (movement: string) => {
-    if (selectedMovements.includes(movement)) {
-      setSelectedMovements(selectedMovements.filter((m) => m !== movement));
-    } else {
-      setSelectedMovements([...selectedMovements, movement]);
-    }
   };
 
   const slides = [
@@ -134,27 +120,6 @@ const ModalCalibrationGuide = ({
         <>
           <div className="h-full flex flex-col justify-center items-center px-5">
             <div className="flex flex-col items-center gap-5 w-full">
-              {/* Chips untuk memilih gerakan */}
-              <div className="flex flex-wrap gap-3 justify-center">
-                <p>
-                  Pilih gerakan yang akan Anda lakukan selama kalibrasi (minimal
-                  2 gerakan):
-                </p>
-                {movements.map((movement) => (
-                  <button
-                    key={movement}
-                    onClick={() => handleMovementToggle(movement)}
-                    className={`px-4 py-1 rounded-xl border ${
-                      selectedMovements.includes(movement)
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {movement}
-                  </button>
-                ))}
-              </div>
-
               {/* Checkbox untuk persetujuan */}
               <div className="flex items-center justify-center gap-5">
                 <label className="text-lg text-gray-500 text-center flex gap-2 items-center userSelect">
@@ -199,15 +164,9 @@ const ModalCalibrationGuide = ({
 
   useEffect(() => {
     if (name && isAgree) {
-      if (selectedMovements.length < 2) {
-        setErrorMessage("Pilih minimal 2 gerakan");
-        setCanStart(false);
-      } else {
-        setErrorMessage("");
-        setCanStart(true);
-      }
+      setCanStart(true);
     } else setCanStart(false);
-  }, [name, isAgree, selectedMovements]);
+  }, [name, isAgree]);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
