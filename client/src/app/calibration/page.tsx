@@ -11,9 +11,8 @@ const Calibration = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
-
   const video = ["OpenFist", "Index", "Thumb"];
+  const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL);
