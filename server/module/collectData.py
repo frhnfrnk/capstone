@@ -3,35 +3,32 @@ import mindrove
 from mindrove.board_shim import BoardShim, MindRoveInputParams, BoardIds, MindRoveError
 from mindrove.data_filter import DataFilter, FilterTypes, DetrendOperations
 import time
+import os
+from flask_socketio import emit
 
-def get_datas(times: int, nama: str):
-    board_shim = None
-    data = None
-    try:
-        BoardShim.enable_dev_board_logger()
-        params = MindRoveInputParams()
-        board_id = BoardIds.MINDROVE_WIFI_BOARD.value
-        board_shim = BoardShim(board_id, params)
-        board_shim.prepare_session()
-        board_shim.start_stream(450000)
+def check_folder_exist(folder_path: str):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    return folder_path
 
-        sampling_rate = board_shim.get_sampling_rate(board_id)
-        timestamp_idx = board_shim.get_timestamp_channel(board_id)
+def get_datas(times: int, nama: str, board_shim: BoardShim):
+    try: 
+        if not board_shim.is_prepared():
+            board_shim.prepare_session()
+        board_shim.start_stream()
+
         print("Device ready for calibration")
-    except MindRoveError as e:
-        print("Error initializing the MindRove board: %s", e)
-        return  
 
-    try:
+        board_shim.config_board(mindrove.MindroveConfigMode.EEG_MODE)
+        sampling_rate = board_shim.get_sampling_rate(board_shim.board_id)
+        timestamp_idx = board_shim.get_timestamp_channel(board_shim.board_id)
+
+        data_list = []
+        channel_indices = [0, 1, 2, 3]  
+        end_time = time.time() + times
+
         if board_shim is not None:
-            board_shim.config_board(mindrove.MindroveConfigMode.EEG_MODE)
-            print("Device configured in EEG mode for calibration")
-            print("Collecting calibration data for %d seconds", times)
-
-            data_list = []
-            channel_indices = [0, 1, 2, 3]  
-            end_time = time.time() + times
-
+            print("Collecting data...")
             while time.time() < end_time:
                 data = board_shim.get_board_data()
                 if data.shape[1] > 0:  
@@ -43,27 +40,28 @@ def get_datas(times: int, nama: str):
                         DataFilter.perform_bandstop(channel_data, sampling_rate, 48.0, 52.0, 2, FilterTypes.BUTTERWORTH, 0)
                         DataFilter.perform_bandstop(channel_data, sampling_rate, 58.0, 62.0, 2, FilterTypes.BUTTERWORTH, 0)
                         filtered_data.append(channel_data)
-
+                    
                     timestamp_data = data[timestamp_idx]
                     filtered_data.append(timestamp_data)
                     filtered_data = pd.DataFrame(filtered_data).T
                     filtered_data.columns = ['CH1', 'CH2', 'CH3', 'CH4', 'Timestamp']
                     data_list.append(filtered_data)
-
+                
             if data_list:
                 all_data = pd.concat(data_list, ignore_index=True)
-                data = all_data
-                print(data)
-                # all_data = pd.concat(data_list, ignore_index=True)
-                # file_name = f'{nama}.csv'
-                # all_data.to_csv(file_name, sep=';', index=False)
-                # print("Calibration data saved to calibration_data.csv")
+                all_data_json = all_data.to_dict(orient="records") 
+                emit('get_data', broadcast=True)
+                return all_data_json
+
+    except MindRoveError as e:
+        print("Error initializing the MindRove board:", e)
     except Exception as e:
-        print("An error occurred during data collection: %s", e)
+        print("An error occurred during data collection:", e)
     finally:
         if board_shim is not None:
-            board_shim.stop_stream()
-            board_shim.release_session()
-            print("Board session released")
+            try:
+                board_shim.stop_stream()
+            except Exception as e:
+                print("Failed to release board session:", e)
 
-    return data
+    return None

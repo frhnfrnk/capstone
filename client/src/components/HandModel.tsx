@@ -1,6 +1,7 @@
+"use client";
 import { useGLTF, useAnimations } from "@react-three/drei";
-import { useEffect, useRef } from "react";
-import { Mesh } from "three";
+import { act, useEffect, useRef, useState } from "react";
+import { LoopOnce, Mesh } from "three";
 
 interface AnimationAction {
   play: () => void;
@@ -11,11 +12,16 @@ interface AnimationAction {
 interface HandModelProps {
   color?: string;
   animationName?: string;
+  trigger?: number;
   position?: [number, number, number];
   scale?: number;
 }
 
-export function HandModel({ animationName, ...props }: HandModelProps) {
+export function HandModel({
+  animationName,
+  trigger,
+  ...props
+}: HandModelProps) {
   const { scene, animations } = useGLTF("/models/modelfix2glb.glb");
   const { actions } = useAnimations(animations, scene);
   const activeActionRef = useRef<AnimationAction | null>(null);
@@ -40,14 +46,17 @@ export function HandModel({ animationName, ...props }: HandModelProps) {
         if (action) {
           if (activeActionRef.current) activeActionRef.current.stop();
           action.reset();
+          action.setLoop(LoopOnce, 1);
+          action.setDuration(3);
+          action.clampWhenFinished = true;
           action.play();
           activeActionRef.current = action;
         }
       }
     }
-  }, [animationName]);
+  }, [animationName, trigger]);
 
   return <primitive object={scene} {...props} rotation={[0, 0, 0]} />;
 }
 
-useGLTF.preload("/models/fix.glb");
+useGLTF.preload("/models/modelfix2glb.glb");

@@ -9,19 +9,11 @@ const Calibration = () => {
   const [name, setName] = useState("");
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [types, setTypes] = useState<string[]>([]);
-  const [selectedVideo, setSelectedVideo] = useState<string[]>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
-  useEffect(() => {
-    const video = types.map((type) => {
-      return `/calibration/${type}.mp4`;
-    });
-
-    setSelectedVideo(video);
-  }, [types]);
+  const video = ["OpenFist", "Index", "Thumb"];
 
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL);
@@ -59,7 +51,7 @@ const Calibration = () => {
   };
 
   const handleVideoEnded = () => {
-    if (currentVideoIndex < selectedVideo.length - 1) {
+    if (currentVideoIndex < video.length - 1) {
       setCurrentVideoIndex(currentVideoIndex + 1);
     }
 
@@ -80,7 +72,7 @@ const Calibration = () => {
 
         <video
           ref={videoRef}
-          src={selectedVideo[currentVideoIndex]}
+          src={video[currentVideoIndex]}
           className="w-full max-w-2xl mt-4 rounded-lg"
           controls
           onEnded={handleVideoEnded}

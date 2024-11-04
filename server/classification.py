@@ -14,7 +14,7 @@ def classification_events(socketio):
         if play:
             return
         
-        data = ["Fist", "Hook", "Open", "Thumb", "Index"]
+        data = ["Fist", "Thumb", "Index"]
         play = True
         accuration = random.randint(20, 99)
         time.sleep(5)  
@@ -32,3 +32,9 @@ def classification_events(socketio):
         global play
         play = False
         emit('classification_stopped', broadcast=True)
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        global play
+        play = False  # Stop classification when client disconnects
+        print("Client disconnected, classification stopped.")

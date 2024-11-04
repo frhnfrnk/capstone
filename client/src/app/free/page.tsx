@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react"; // Import Suspense
+import { useEffect, useState, Suspense, useRef } from "react"; // Import Suspense
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { HandModel } from "@/components/HandModel";
@@ -12,11 +12,26 @@ import Loading from "@/components/Loading";
 
 export default function Home() {
   // const searchParams = useSearchParams();
-  const [animation, setAnimation] = useState("Stop Animation"); // Set default animation
+  const [animation, setAnimation] = useState("Stop Animation");
+  const [trigger, setTrigger] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [start, setStart] = useState(false);
 
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [showVideo, setShowVideo] = useState(false);
+
+  const video = [
+    { name: "Fist", src: "./stimulus/OpenFist.mp4" },
+    { name: "Index", src: "./stimulus/Index.mp4" },
+    { name: "Thumb", src: "./stimulus/Thumb.mp4" },
+  ];
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCurrentVideoIndex(Number(e.target.value));
+  };
 
   useEffect(() => {
     setIsOpen(true);
@@ -26,8 +41,9 @@ export default function Home() {
     const socket = io(SOCKET_SERVER_URL);
 
     socket.on("classification_progress", (message) => {
-      console.log(message);
-      setAnimation(message);
+      setAnimation(message.data);
+      setTrigger(Date.now());
+      console.log("Received classification:", message.data);
     });
 
     socket.on("classification_stopped", () => {
@@ -70,6 +86,7 @@ export default function Home() {
             scale={2.5}
             position={[0, -6, 1.8]}
             animationName={animation}
+            trigger={trigger}
           />
           <Lights />
           <spotLight
@@ -101,6 +118,50 @@ export default function Home() {
         >
           {start ? "Stop Classification" : "Start Classification"}
         </button>
+
+        <div className="absolute top-5 left-5 flex flex-col items-start mb-4">
+          <div className="flex flex-row items-start gap-4">
+            <button
+              className="
+              bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2
+              transition duration-300 ease-in-out
+            "
+              onClick={() => {
+                setShowVideo(!showVideo);
+              }}
+            >
+              Show stimulus
+            </button>
+            {showVideo && (
+              <select
+                className="mb-2 p-2 rounded border border-gray-300 focus:outline-none"
+                onChange={handleVideoChange}
+                value={currentVideoIndex}
+              >
+                {video.map((v, index) => (
+                  <option key={index} value={index}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {showVideo && (
+            <video
+              ref={videoRef}
+              src={video[currentVideoIndex].src}
+              className="
+                  w-full max-w-xs rounded-lg
+                  transition-opacity duration-500 transform
+                  opacity-100 translate-y-0
+                "
+              loop
+              autoPlay
+              muted
+            />
+          )}
+        </div>
       </div>
     </Suspense>
   );
