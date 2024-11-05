@@ -11,6 +11,21 @@ def check_folder_exist(folder_path: str):
         os.makedirs(folder_path)
     return folder_path
 
+def save_data_to_csv(data, folder_name: str, file_name: str):
+    folder_path = check_folder_exist(f'user/{folder_name}')
+    file_path = os.path.join(folder_path, file_name)
+
+    if os.path.exists(file_path):
+        # Load existing data and merge with new data
+        existing_data = pd.read_csv(file_path)
+        combined_data = pd.concat([existing_data, data], ignore_index=True)
+        combined_data.to_csv(file_path, index=False)
+        print(f"Data merged and saved to {file_path}")
+    else:
+        # Save new data as a new file
+        data.to_csv(file_path, index=False)
+        print(f"Data saved to {file_path}")
+
 def get_datas(times: int, nama: str, board_shim: BoardShim):
     try: 
         if not board_shim.is_prepared():
@@ -36,9 +51,14 @@ def get_datas(times: int, nama: str, board_shim: BoardShim):
                     for channel in channel_indices:
                         channel_data = data[channel]
                         DataFilter.detrend(channel_data, DetrendOperations.CONSTANT.value)
-                        DataFilter.perform_bandpass(channel_data, sampling_rate, 3.0, sampling_rate / 2, 2, FilterTypes.BUTTERWORTH, 0)
-                        DataFilter.perform_bandstop(channel_data, sampling_rate, 48.0, 52.0, 2, FilterTypes.BUTTERWORTH, 0)
-                        DataFilter.perform_bandstop(channel_data, sampling_rate, 58.0, 62.0, 2, FilterTypes.BUTTERWORTH, 0)
+                        # DataFilter.perform_bandpass(channel_data, sampling_rate, 3.0, sampling_rate / 2, 2, FilterTypes.BUTTERWORTH, 0)
+                        # DataFilter.perform_bandstop(channel_data, sampling_rate, 48.0, 52.0, 2, FilterTypes.BUTTERWORTH, 0)
+                        # DataFilter.perform_bandstop(channel_data, sampling_rate, 58.0, 62.0, 2, FilterTypes.BUTTERWORTH, 0)
+                        # 50 Hz Notch filter
+                        DataFilter.perform_bandstop(channel_data, sampling_rate, 50.0, 1.0, 2, FilterTypes.BUTTERWORTH, 0)
+
+                        # 8-30 Hz Bandpass filter
+                        DataFilter.perform_bandpass(channel_data, sampling_rate, 8.0, 30.0, 2, FilterTypes.BUTTERWORTH, 0)
                         filtered_data.append(channel_data)
                     
                     timestamp_data = data[timestamp_idx]
@@ -50,6 +70,7 @@ def get_datas(times: int, nama: str, board_shim: BoardShim):
             if data_list:
                 all_data = pd.concat(data_list, ignore_index=True)
                 all_data_json = all_data.to_dict(orient="records") 
+                save_data_to_csv(all_data, nama, f'{nama}_data.csv')
                 emit('get_data', broadcast=True)
                 return all_data_json
 

@@ -22,7 +22,7 @@ export function HandModel({
   trigger,
   ...props
 }: HandModelProps) {
-  const { scene, animations } = useGLTF("/models/modelfix2glb.glb");
+  const { scene, animations } = useGLTF("/models/FIXBANGET.glb");
   const { actions } = useAnimations(animations, scene);
   const activeActionRef = useRef<AnimationAction | null>(null);
 
@@ -59,4 +59,4 @@ export function HandModel({
   return <primitive object={scene} {...props} rotation={[0, 0, 0]} />;
 }
 
-useGLTF.preload("/models/modelfix2glb.glb");
+useGLTF.preload("/models/FIXBANGET.glb");
