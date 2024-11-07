@@ -2,7 +2,6 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 
-from mr import mindrove
 from user import user
 from calibration import calibration
 from calibration import calibration_events
@@ -15,7 +14,6 @@ app = Flask(__name__)
 CORS(app)  
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-app.register_blueprint(mindrove)
 app.register_blueprint(user)
 app.register_blueprint(calibration) 
 app.register_blueprint(classification)
@@ -25,8 +23,9 @@ params = MindRoveInputParams()
 board_id = BoardIds.MINDROVE_WIFI_BOARD.value
 board_shim = BoardShim(board_id, params)
 
+
 calibration_events(socketio, board_shim)
-classification_events(socketio)
+classification_events(socketio, board_shim)
 
 
 if __name__ == '__main__':

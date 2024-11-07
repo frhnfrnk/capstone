@@ -1,0 +1,130 @@
+import pandas as pd
+import numpy as np
+import os
+import pywt
+import joblib
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from mne.decoding import CSP
+import mindrove
+from mindrove.board_shim import BoardShim, MindRoveInputParams, BoardIds, MindRoveError
+from mindrove.data_filter import DataFilter, FilterTypes, DetrendOperations
+import time
+import mne
+
+class LiveClassifier:
+    def __init__(self, name: str):
+        model_path = f'./user/{name}'
+        self.Csp_list = [joblib.load(os.path.join(model_path, f'csp_model_{i}.joblib')) for i in range(8)]
+        self.scaler = joblib.load(os.path.join(model_path, 'scaler.pkl'))
+        self.svm = joblib.load(os.path.join(model_path, 'model.pkl'))
+        self.classes = ['Open', 'Thumb', 'Index']
+        self.data = []
+        print("Model loaded successfully")
+
+    def wpd(self, X):
+        coeffs = pywt.WaveletPacket(X, 'db4', mode='symmetric', maxlevel=5)
+        return coeffs
+
+    def feature_bands(self, x):
+        C = self.wpd(x[0, 0, :])
+        coeffs_sample = [node.data for node in C.get_level(5, 'natural')]
+        jumlah_koefisien = len(coeffs_sample[0])  
+            
+        Bands = np.empty((8, x.shape[0], x.shape[1], jumlah_koefisien)) 
+        
+        for i in range(x.shape[0]):  
+            for ii in range(x.shape[1]):  
+                pos = []
+                C = self.wpd(x[i, ii, :]) 
+                pos = np.append(pos, [node.path for node in C.get_level(5, 'natural')])
+                
+                for b in range(1, 9):  
+                    Bands[b-1, i, ii, :] = C[pos[b]].data  
+
+        return Bands
+    
+    def preprocess(self, raw_data):
+        # Select relevant columns
+        df = raw_data
+        # Convert object data types to float (handle comma as decimal separator)
+
+        # # Normalize data
+        # scaler = StandardScaler()
+        # df[df.columns] = scaler.fit_transform(df)
+
+        # Set up EEG info (sampling frequency, channel types, etc.)
+        sfreq = 500
+        ch_types = ["eeg", "eeg", "eeg", "eeg"]
+        ch_names = ["C1", "C2", "C3", "C4"]
+        info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+        # Create RawArray for EEG data
+        raw = mne.io.RawArray(df.T, info)
+
+        # Apply bandpass filter
+        raw.filter(8, 30., fir_design='firwin')
+
+        # Create fixed-length events and epochs
+        events = mne.make_fixed_length_events(raw, duration=1.0)
+        epochs = mne.Epochs(raw, events, tmin=0, tmax=1, proj=True, baseline=None, preload=True)
+        
+        # Extract data from epochs
+        return epochs.get_data(copy=True)
+
+    def classify(self, data):
+        # Extract WPD features
+        new_data = self.preprocess(data)
+        print(new_data.shape)
+        wpd_data = self.feature_bands(new_data)
+
+        # Transform data using CSP and scale
+        transformed_data = np.concatenate(
+            [self.Csp_list[i].transform(wpd_data[i, :, :]) for i in range(len(self.Csp_list))], axis=-1
+        )
+        scaled_data = self.scaler.transform(transformed_data)
+        
+        prob = self.svm.predict_proba(scaled_data)
+        predict = self.svm.predict(scaled_data)
+        best_prob = np.argmax(prob)
+        result = self.classes[best_prob]
+        return result
+
+
+    def live_classification(self, board_shim: BoardShim):
+        channel_indices = [0, 1, 2, 3]
+        
+        if not board_shim.is_prepared():
+            board_shim.prepare_session()
+        board_shim.start_stream()
+        print("Device ready for live classification")
+        
+        end_time = time.time() + 2.1
+
+        try:
+            while time.time() < end_time:
+                data = board_shim.get_board_data()
+                if data.shape[1] > 0:
+                    filtered_data = []
+                    for channel in channel_indices:
+                        channel_data = data[channel]
+                        DataFilter.detrend(channel_data, DetrendOperations.CONSTANT.value)
+                        DataFilter.perform_bandpass(channel_data, board_shim.get_sampling_rate(board_shim.board_id), 3.0, 30.0, 2, FilterTypes.BUTTERWORTH, 0)
+                        filtered_data.append(channel_data)
+                    
+                    # Transpose and create DataFrame
+                    filtered_data = pd.DataFrame(filtered_data).T
+                    filtered_data.columns = ['CH1', 'CH2', 'CH3', 'CH4']
+                    self.data.append(filtered_data)
+                    
+            # Perform classification
+            df = pd.concat(self.data)
+            prediction = self.classify(df)
+            print("Predicted Gesture:", prediction)
+            self.data = []
+
+            time.sleep(5)  
+        except MindRoveError as e:
+            print("MindRove board error:", e)
+        finally:
+            board_shim.stop_stream()
+

@@ -1,6 +1,7 @@
 "use client";
 
 import ModalCalibrationResult from "@/components/ModalCalibrationResult";
+import axios from "axios";
 import { time } from "console";
 import { useEffect, useState, Suspense } from "react"; // Import Suspense
 import { io, Socket } from "socket.io-client";
@@ -60,6 +61,17 @@ export default function Home() {
     setIsOpen(true);
   };
 
+  const fetchResult = () => {
+    axios
+      .get(`${SOCKET_SERVER_URL}/api/user/get-model/Farhan`)
+      .then((res) => {
+        console.log(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   return (
     <div>
       {data && (
@@ -72,10 +84,13 @@ export default function Home() {
       <button onClick={stopTesting}>Stop Testing</button>
       <button onClick={handleOpenResult}>Open Result</button>
 
+      <button onClick={fetchResult}>Get Result</button>
+
       <ModalCalibrationResult
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         name="Naren"
+        isLoading={false}
       />
     </div>
   );

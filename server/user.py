@@ -14,15 +14,14 @@ def get_user():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@user.route('/get-model', methods=['GET'])
-def get_model():
-    user_folder_path = "./user"
-    user_name = request.args.get('user')
-    file_name = "result.json" 
+@user.route('/get-model/<user>', methods=['GET'])
+def get_model(user):
+    user_folder_path = "user"
+    file_name = "results.json" 
 
     try:
-        file_path = os.path.join(user_folder_path, user_name, file_name)
-        
+        file_path = os.path.join(user_folder_path, user, file_name)
+        print(file_path)
         if os.path.isfile(file_path):
             with open(file_path, 'r') as file:
                 file_content = json.load(file)

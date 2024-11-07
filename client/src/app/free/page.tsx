@@ -23,6 +23,8 @@ export default function Home() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
 
+  const searchParams = useSearchParams();
+
   const video = [
     { name: "Fist", src: "./stimulus/OpenFist.mp4" },
     { name: "Index", src: "./stimulus/Index.mp4" },
@@ -58,7 +60,11 @@ export default function Home() {
 
   const startClassify = () => {
     const socket = io(SOCKET_SERVER_URL);
-    socket.emit("start_classification");
+    const nama = searchParams.get("user") || "Anonymous";
+    const message = {
+      nama: nama,
+    };
+    socket.emit("start_classification", message);
 
     setStart(true);
   };

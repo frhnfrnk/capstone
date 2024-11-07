@@ -20,11 +20,6 @@ export default function Home() {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [userExist, setUserExist] = useState<string[]>([]);
   const [mode, setMode] = useState<string>("");
-  const [connection, setConnection] = useState<ConnectionState>({
-    board: "",
-    error: "",
-    success: false,
-  });
   const [loading, setLoading] = useState<boolean>(false);
 
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
@@ -42,29 +37,6 @@ export default function Home() {
 
   const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
     setSelectedUser(e.target.value);
-
-  const checkConnection = () => {
-    setLoading(true);
-    axios
-      .get(`${SERVER_URL}/api/mindrove/check_connection`)
-      .then((res) => {
-        setConnection({
-          board: res.data.board,
-          error: "",
-          success: true,
-        });
-      })
-      .catch((err) => {
-        setConnection({
-          board: "",
-          error: err.response.data.error,
-          success: false,
-        });
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
 
   const getUserExist = () => {
     setLoading(true);
@@ -91,12 +63,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    if (!connection.success) {
-      checkConnection();
-    }
-  }, []);
-
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100 p-4">
       <img src="/Logo/nobg.png" alt="Logo" className="w-64 -mt-12" />
@@ -121,17 +87,6 @@ export default function Home() {
           Free Mode
         </button>
       </div>
-
-      <p className="mt-2">
-        Connect to:{" "}
-        <span className="font-bold underline">
-          {connection.success ? connection.board : "Not Connected"}
-        </span>
-      </p>
-      {!connection.success && !loading && (
-        <p className="text-center text-red-500">{connection.error}</p>
-      )}
-      {loading && <p className="text-center text-blue-500">Loading...</p>}
 
       {/* Modal */}
       {isModalOpen && (
