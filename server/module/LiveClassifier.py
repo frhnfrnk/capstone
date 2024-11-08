@@ -11,14 +11,15 @@ from mindrove.board_shim import BoardShim, MindRoveInputParams, BoardIds, MindRo
 from mindrove.data_filter import DataFilter, FilterTypes, DetrendOperations
 import time
 import mne
+from flask_socketio import emit
 
 class LiveClassifier:
     def __init__(self, name: str):
         model_path = f'./user/{name}'
-        self.Csp_list = [joblib.load(os.path.join(model_path, f'csp_model_{i}.joblib')) for i in range(8)]
+        self.Csp_list = [joblib.load(os.path.join(model_path,"csp", f'csp_model_{i}.joblib')) for i in range(8)]
         self.scaler = joblib.load(os.path.join(model_path, 'scaler.pkl'))
-        self.svm = joblib.load(os.path.join(model_path, 'model.pkl'))
-        self.classes = ['Open', 'Thumb', 'Index']
+        self.svms = [joblib.load(os.path.join(model_path, "svm", f'svm_model_{i}.joblib')) for i in range(3)]
+        self.classes = ['Fist', 'Thumb', 'Index']
         self.data = []
         print("Model loaded successfully")
 
@@ -65,8 +66,8 @@ class LiveClassifier:
         raw.filter(8, 30., fir_design='firwin')
 
         # Create fixed-length events and epochs
-        events = mne.make_fixed_length_events(raw, duration=1.0)
-        epochs = mne.Epochs(raw, events, tmin=0, tmax=1, proj=True, baseline=None, preload=True)
+        events = mne.make_fixed_length_events(raw, duration=3.0)
+        epochs = mne.Epochs(raw, events, tmin=1, tmax=4, proj=True, baseline=None, preload=True)
         
         # Extract data from epochs
         return epochs.get_data(copy=True)
@@ -82,11 +83,19 @@ class LiveClassifier:
             [self.Csp_list[i].transform(wpd_data[i, :, :]) for i in range(len(self.Csp_list))], axis=-1
         )
         scaled_data = self.scaler.transform(transformed_data)
-        
-        prob = self.svm.predict_proba(scaled_data)
-        predict = self.svm.predict(scaled_data)
-        best_prob = np.argmax(prob)
-        result = self.classes[best_prob]
+        prob_sum = np.zeros(len(self.svms[0].classes_))
+    
+        # Calculate and accumulate probabilities from each SVM model
+        for svm in self.svms:
+            prob_sum += svm.predict_proba(scaled_data)[0]
+
+        predicted_class_idx = np.argmax(prob_sum)
+        result = self.classes[predicted_class_idx]
+        message = {
+            "result": result,
+            "accuracy": prob_sum[predicted_class_idx]
+        }
+        emit('result_classification', message, broadcast=True)
         return result
 
 
@@ -98,7 +107,8 @@ class LiveClassifier:
         board_shim.start_stream()
         print("Device ready for live classification")
         
-        end_time = time.time() + 2.1
+        end_time = time.time() + 5
+        sampling_rate = board_shim.get_sampling_rate(board_shim.board_id)
 
         try:
             while time.time() < end_time:
@@ -108,7 +118,7 @@ class LiveClassifier:
                     for channel in channel_indices:
                         channel_data = data[channel]
                         DataFilter.detrend(channel_data, DetrendOperations.CONSTANT.value)
-                        DataFilter.perform_bandpass(channel_data, board_shim.get_sampling_rate(board_shim.board_id), 3.0, 30.0, 2, FilterTypes.BUTTERWORTH, 0)
+                        DataFilter.perform_bandpass(channel_data, sampling_rate, 8.0, 30.0, 4, FilterTypes.BUTTERWORTH, 0)
                         filtered_data.append(channel_data)
                     
                     # Transpose and create DataFrame
@@ -122,7 +132,7 @@ class LiveClassifier:
             print("Predicted Gesture:", prediction)
             self.data = []
 
-            time.sleep(5)  
+            time.sleep(10)  
         except MindRoveError as e:
             print("MindRove board error:", e)
         finally:

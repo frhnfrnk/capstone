@@ -5,6 +5,8 @@ from module.ModelProcessing import EEGModel
 from module.CreateAnnotation import create_annotation
 import numpy as np
 
+from module.ProcessToRaw import SaveData
+
 
 calibration = Blueprint('calibration', __name__, url_prefix='/api/calibration')
 

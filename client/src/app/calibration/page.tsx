@@ -14,8 +14,9 @@ const Calibration = () => {
   const [isLoading, setIsLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [status, setStatus] = useState<string[]>([]);
 
-  const video = "./calibration/Full.mp4";
+  const video = "./calibration/Full2.mp4";
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
   useEffect(() => {
@@ -40,15 +41,18 @@ const Calibration = () => {
 
     socket.on("get_data", () => {
       console.log("Data received");
+      setStatus(["Data sudah diterima", "Sedang memproses data..."]);
     });
 
     socket.on("preprocess_data", (message) => {
       console.log("Data preprocessed");
+      setStatus(["Data sudah diproses", "Sedang membuat model..."]);
     });
 
     socket.on("calibration_done", (message) => {
       console.log("Calibration Done");
       setResult(message);
+      setIsLoading(false);
     });
 
     socket.on("testing_progress", (message) => {
@@ -99,6 +103,7 @@ const Calibration = () => {
         name={name}
         isLoading={isLoading}
         result={result}
+        status={status}
       />
 
       <div className="h-screen flex flex-col justify-center items-center bg-gray-100">

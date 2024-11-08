@@ -9,6 +9,7 @@ interface ModalCalibrationResultProps {
   name: string;
   isLoading: boolean;
   result?: any;
+  status: string[];
 }
 
 const ModalCalibrationResult = ({
@@ -17,6 +18,7 @@ const ModalCalibrationResult = ({
   name,
   isLoading,
   result,
+  status,
 }: ModalCalibrationResultProps) => {
   if (!isOpen) return null;
   const [isModeOpen, setIsModeOpen] = useState(false);
@@ -53,7 +55,15 @@ const ModalCalibrationResult = ({
       <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-8 transform transition-transform ease-in-out duration-300 scale-100">
           {isLoading ? (
-            <Loading />
+            <div>
+              <Loading w="w-16" h="h-16" />
+              <h2 className="font-mono text-sm font-bold text-center text-gray-500 mt-4">
+                {status[0]}
+              </h2>
+              <h2 className="font-mono text-sm font-bold text-center text-gray-500 mt-4">
+                {status[1]}
+              </h2>
+            </div>
           ) : (
             <>
               <img

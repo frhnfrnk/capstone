@@ -23,6 +23,8 @@ export default function Home() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
 
+  const [accuracy, setAccuracy] = useState(0);
+
   const searchParams = useSearchParams();
 
   const video = [
@@ -51,6 +53,13 @@ export default function Home() {
     socket.on("classification_stopped", () => {
       console.log("Classification stopped");
       setAnimation("Stop Animation");
+    });
+
+    socket.on("result_classification", (message) => {
+      console.log("Result classification:", message.classes);
+      setAnimation(message.result);
+      setAccuracy(message.accuracy);
+      setTrigger(Date.now());
     });
 
     return () => {
@@ -115,6 +124,10 @@ export default function Home() {
           <p className="px-6 py-2 text-black rounded-lg text-lg">
             Gerakan:{" "}
             <strong>{animation !== "Stop Animation" ? animation : ""}</strong>
+          </p>
+          <p className="px-6 py-2 text-black rounded-lg text-lg">
+            Accuracy:{" "}
+            <strong>{accuracy !== 0 ? accuracy.toString() : ""}</strong>
           </p>
         </div>
 

@@ -55,9 +55,7 @@ def get_datas(times: int, nama: str, board_shim: BoardShim):
                     for channel in channel_indices:
                         channel_data = data[channel]
                         DataFilter.detrend(channel_data, DetrendOperations.CONSTANT.value)
-                        DataFilter.perform_bandpass(channel_data, sampling_rate, 3.0, sampling_rate / 2, 2, FilterTypes.BUTTERWORTH, 0)
-                        DataFilter.perform_bandstop(channel_data, sampling_rate, 48.0, 52.0, 2, FilterTypes.BUTTERWORTH, 0)
-                        DataFilter.perform_bandstop(channel_data, sampling_rate, 58.0, 62.0, 2, FilterTypes.BUTTERWORTH, 0)
+                        DataFilter.perform_bandpass(channel_data, sampling_rate, 8.0, 30.0, 4, FilterTypes.BUTTERWORTH, 0)
                         filtered_data.append(channel_data)
                     
                     timestamp_data = data[timestamp_idx]

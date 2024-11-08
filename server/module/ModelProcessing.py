@@ -15,6 +15,8 @@ import os
 from flask_socketio import emit
 import json
 
+from sklearn.model_selection import LeaveOneOut
+
 class EEGModel:
     def __init__(self, mindrove_data=None, annotations=None, sfreq=500, name=None):
         self.mindrove_data = mindrove_data
@@ -84,7 +86,7 @@ class EEGModel:
         # Convert annotations to events and create epochs
         picks_raw = mne.pick_types(self.raw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')  
         events, event_id = mne.events_from_annotations(self.raw)
-        tmin, tmax = -2, 1
+        tmin, tmax = 1.0, 4
         self.epochs = mne.Epochs(self.raw, events, event_id, tmin, tmax, baseline=None, preload=True, picks=picks_raw)
         emit('preprocess_data', broadcast=True)
         print("Data preprocessed and epochs created.")
@@ -143,7 +145,7 @@ class EEGModel:
 
         # Initialize CSP
         Csp = [
-            CSP(n_components=3, reg='ledoit_wolf', log=True, norm_trace=False)
+            CSP(n_components=3, reg='ledoit_wolf', log=False, norm_trace=False)
             for _ in range(wpd_data_train.shape[0])
         ]
 
@@ -163,14 +165,14 @@ class EEGModel:
 
         # Grid search for hyperparameters
         param_grid = {
-            'estimator__estimator__C': [0.1, 0.5,0.8, 1, 1.1], 
-            'estimator__estimator__gamma': [0.9, 1, 1,1, 1.2],  
+            'estimator__estimator__C': [0.01, 0.1, 1, 10, 100], 
+            'estimator__estimator__gamma': [0.001, 0.01, 0.1, 1, 10],
         }
 
         svms = []
 
         # Initialize Stratified KFold
-        cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+        cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
         for train_idx, val_idx in cv.split(X_full_train, labels_train):
             X_train, X_val = X_full_train[train_idx], X_full_train[val_idx]
@@ -227,21 +229,28 @@ class EEGModel:
         print("Model trained.")
 
         directory = f'./user/{self.name}/'
+        directory_svm = os.path.join(directory, "svm")
+        directory_csp = os.path.join(directory, "csp")
         os.makedirs(directory, exist_ok=True)
+        os.makedirs(directory_svm, exist_ok=True)
+        os.makedirs(directory_csp, exist_ok=True)
 
-        file_name_svm = os.path.join(directory, 'model.pkl')
+
+        for i, svm in enumerate(svms):
+            svm_file_name = os.path.join(directory_svm, f'svm_model_{i}.joblib')
+            joblib.dump(svm, svm_file_name)
+
         file_name_ss = os.path.join(directory, 'scaler.pkl')
 
-        joblib.dump(self.model, file_name_svm)
         joblib.dump(ss, file_name_ss)
 
         for i, csp_model in enumerate(Csp):
-            csp_file_name = os.path.join(directory, f'csp_model_{i}.joblib')
+            csp_file_name = os.path.join(directory_csp, f'csp_model_{i}.joblib')
             joblib.dump(csp_model, csp_file_name)
             
-        print(f"Model saved to {file_name_svm}.")
+        print(f"Model saved to {directory_svm}.")
         print(f"Scaler saved to {file_name_ss}.")
-        print(f"CSP models saved to {directory}.")
+        print(f"CSP models saved to {directory_csp}.")
 
 
     def save_results(self):
