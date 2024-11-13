@@ -14,13 +14,20 @@ def classification_events(socketio, board_shim):
         global play
         if play:
             return
-        
+        print(message)
         play = True
         name = message['nama']
+        emit("starting_classification", broadcast=True)
+
+        # Initialize the classifier outside the loop for efficiency
+        
         while play:
+            # Check if play is still True before each classification step
+            if not play:
+                break
             live_classifier = LiveClassifier.LiveClassifier(name=name)
             live_classifier.live_classification(board_shim)
-
+            emit("result_classification", live_classifier.message, broadcast=True)
 
     @socketio.on('stop_classification')
     def handle_stop_classification():
@@ -45,10 +52,13 @@ def classification_events(socketio, board_shim):
         accuration = random.randint(20, 99)
         time.sleep(5)  
 
-        while play: 
+        while play:
+            # Check if play is still True before each testing step
+            if not play:
+                break
             message = {
-                "data": random.choice(data),
-                "accuration": accuration
+                "result": random.choice(data),
+                "accuracy": accuration
             }
             emit('testinggsaew', message, broadcast=True)
             time.sleep(5)

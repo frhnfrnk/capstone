@@ -44,10 +44,8 @@ export default function Home() {
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL);
 
-    socket.on("classification_progress", (message) => {
-      setAnimation(message.data);
-      setTrigger(Date.now());
-      console.log("Received classification:", message.data);
+    socket.on("starting_classification", () => {
+      console.log("Received classification:");
     });
 
     socket.on("classification_stopped", () => {
@@ -56,7 +54,7 @@ export default function Home() {
     });
 
     socket.on("result_classification", (message) => {
-      console.log("Result classification:", message.classes);
+      console.log("Result classification:", message);
       setAnimation(message.result);
       setAccuracy(message.accuracy);
       setTrigger(Date.now());
@@ -74,7 +72,7 @@ export default function Home() {
       nama: nama,
     };
     socket.emit("start_classification", message);
-
+    setShowVideo(true);
     setStart(true);
   };
 

@@ -17,9 +17,8 @@ interface ConnectionState {
 export default function Home() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const [userExist, setUserExist] = useState<string[]>([]);
   const [mode, setMode] = useState<string>("");
+  const [modelExist, setModelExist] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
@@ -35,15 +34,12 @@ export default function Home() {
     setMode("");
   };
 
-  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setSelectedUser(e.target.value);
-
   const getUserExist = () => {
     setLoading(true);
     axios
-      .get(`${SERVER_URL}/api/user`)
+      .get(`${SERVER_URL}/api/model/check`)
       .then((res) => {
-        setUserExist(res.data.user);
+        setModelExist(res.data.status);
       })
       .catch((err) => {
         console.log(err);
@@ -53,13 +49,10 @@ export default function Home() {
       });
   };
 
-  const handleSelectUser = () => {
-    if (selectedUser) {
-      if (mode === "Games") {
-        router.push(`/games?user=${selectedUser}`);
-      } else {
-        router.push(`/free?user=${selectedUser}`);
-      }
+  const handleCalibration = () => {
+    if (mode) {
+      window.localStorage.setItem("mode", mode);
+      router.push(`/calibration/`);
     }
   };
 
@@ -95,30 +88,17 @@ export default function Home() {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
               {mode} Mode
             </h2>
-            <label className="block text-gray-700 mb-2" htmlFor="model-select">
-              Pilih user yang akan digunakan:
-            </label>
-            <select
-              id="model-select"
-              value={selectedUser}
-              onChange={handleUserChange}
-              className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring focus:ring-blue-500"
-            >
-              <option value="">Pilih User</option>
-              {userExist.map((user, index) => (
-                <option className="p-2" key={index} value={user}>
-                  {user}
-                </option>
-              ))}
-            </select>
-            <div className="flex justify-end items-center mb-4">
-              <button
-                onClick={() => router.push("/calibration")}
-                className="text-blue-600 hover:underline"
-              >
-                Tambah User Baru
-              </button>
-            </div>
+            {modelExist ? (
+              <p className="text-gray-600 mb-4">
+                Silahkan lakukan kalibrasi untuk memulai mode {mode}.
+              </p>
+            ) : (
+              <p className="text-gray-600 mb-4">
+                Anda belum memiliki model machine learning. Silahkan lakukan
+                pengambilan data EEG terlebih dahulu.
+              </p>
+            )}
+
             <div className="flex justify-end space-x-2">
               <button
                 onClick={handleCloseModal}
@@ -126,12 +106,21 @@ export default function Home() {
               >
                 Batal
               </button>
-              <button
-                onClick={handleSelectUser}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out"
-              >
-                Pilih
-              </button>
+              {modelExist ? (
+                <button
+                  onClick={handleCalibration}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  Kalibrasi
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push("/collect-data")}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  Ambil Data
+                </button>
+              )}
             </div>
           </div>
         </div>

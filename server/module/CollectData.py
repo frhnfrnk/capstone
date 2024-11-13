@@ -5,12 +5,18 @@ from mindrove.data_filter import DataFilter, FilterTypes, DetrendOperations
 import time
 import os
 from flask_socketio import emit
+import numpy as np
+
+from threading import Event
+
+stop_event = Event()
 
 
-def get_datas(times: int, nama: str, board_shim: BoardShim):
+def get_datas(times: int,  board_shim: BoardShim):
     try: 
         if not board_shim.is_prepared():
             board_shim.prepare_session()
+
         board_shim.start_stream()
 
         print("Device ready for calibration")
@@ -23,6 +29,7 @@ def get_datas(times: int, nama: str, board_shim: BoardShim):
         channel_indices = [0, 1, 2, 3]  
         end_time = time.time() + times
 
+
         if board_shim is not None:
             print("Collecting data...")
             while time.time() < end_time:
@@ -32,15 +39,23 @@ def get_datas(times: int, nama: str, board_shim: BoardShim):
                     for channel in channel_indices:
                         channel_data = data[channel]
                         DataFilter.detrend(channel_data, DetrendOperations.CONSTANT.value)
+                        DataFilter.perform_bandstop(data[channel], sampling_rate, 50.0, 4.0, 2,
+                                        FilterTypes.BUTTERWORTH.value, 0)
                         DataFilter.perform_bandpass(channel_data, sampling_rate, 8.0, 30.0, 4, FilterTypes.BUTTERWORTH, 0)
                         filtered_data.append(channel_data)
                     
                     timestamp_data = data[timestamp_idx]
+                    # Filter timestamps within the intended time range
+                    valid_indices = (timestamp_data <= end_time)
+                    if np.any(valid_indices):
+                        filtered_data = [ch[valid_indices] for ch in filtered_data]
+                        timestamp_data = timestamp_data[valid_indices]
+
                     filtered_data.append(timestamp_data)
                     filtered_data = pd.DataFrame(filtered_data).T
                     filtered_data.columns = ['CH1', 'CH2', 'CH3', 'CH4', 'Timestamp']
                     data_list.append(filtered_data)
-                
+
             if data_list:
                 all_data = pd.concat(data_list, ignore_index=True)
                 all_data_json = all_data.to_dict(orient="records") 

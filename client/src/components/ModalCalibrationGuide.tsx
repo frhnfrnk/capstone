@@ -29,25 +29,25 @@ const ModalCalibrationGuide = ({
 
   const handleName = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
-    const isExist = userExist.includes(e.target.value);
-    setIsUserNameExist(isExist);
-    setErrorMessage(isExist ? "Nama sudah digunakan" : "");
+    // const isExist = userExist.includes(e.target.value);
+    // setIsUserNameExist(isExist);
+    // setErrorMessage(isExist ? "Nama sudah digunakan" : "");
   };
 
-  const getUserExist = () => {
-    axios
-      .get(`${SERVER_URL}/api/user`)
-      .then((res) => {
-        setUserExist(res.data.user);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
+  // const getUserExist = () => {
+  //   axios
+  //     .get(`${SERVER_URL}/api/user`)
+  //     .then((res) => {
+  //       setUserExist(res.data.user);
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     });
+  // };
 
-  useEffect(() => {
-    getUserExist();
-  }, []);
+  // useEffect(() => {
+  //   getUserExist();
+  // }, []);
 
   const onClose = () => {
     setUsername(name);
@@ -59,10 +59,14 @@ const ModalCalibrationGuide = ({
       content: (
         <div className="flex flex-col items-center justify-center h-full px-5">
           <h1 className="text-4xl font-bold mb-4 text-blue-600">
-            Panduan Kalibrasi
+            Panduan Kalibrasi EEG
           </h1>
           <p className="text-lg text-gray-700 text-center">
-            Ikuti langkah-langkah berikut untuk melakukan kalibrasi.
+            Ini merupakan panduan dalam melakukan kalibrasi EEG. Pastikan Anda
+            telah membaca dan memahami panduan ini sebelum melanjutkan. Sinyal
+            setiap individu berbeda, oleh karena itu kalibrasi sangat penting
+            untuk mendapatkan hasil yang akurat. Jika Anda bukan pemilik model
+            klasifikasi ini, kemungkinan besar Anda akan gagal dalam kalibrasi.
           </p>
         </div>
       ),

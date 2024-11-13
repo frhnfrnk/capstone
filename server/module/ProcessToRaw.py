@@ -9,7 +9,9 @@ class SaveData:
         self.annotations = annotations
         self.sfreq = sfreq
         self.raw = None
-        self.file_path = f"/model/{name}_data.raw"
+        self.file_path = f"./data/{name}_raw.fif"
+        self.new_fif = None
+        self.temp_file = "./temp_raw.fif"
 
     def load_data_from_mindrove(self):
         """Load data from MindRove into MNE Raw format."""
@@ -41,6 +43,7 @@ class SaveData:
             description=self.annotations['description']
         )
         self.raw.set_annotations(annot)
+        self.raw.save(self.temp_file, overwrite=True)
         print("Annotations added to raw data.")
 
     def merge_with_existing_data(self):
@@ -48,7 +51,8 @@ class SaveData:
         if os.path.exists(self.file_path):
             # Load existing data and concatenate with the new annotated data
             existing_raw = mne.io.read_raw_fif(self.file_path, preload=True)
-            self.raw = mne.concatenate_raws([existing_raw, self.raw])
+            temp_raw = mne.io.read_raw_fif("./temp_raw.fif", preload=True)
+            self.new_fif = mne.concatenate_raws([existing_raw, temp_raw])
             print("Existing data found and merged with new annotated data.")
         else:
             print("No existing data found. Only new data will be saved.")
@@ -62,8 +66,14 @@ class SaveData:
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         
-        self.raw.save(self.file_path, overwrite=True)
-        print(f"Data saved to {self.file_path}")
+        if self.new_fif:
+            self.new_fif.save(self.file_path, overwrite=True)
+            print(f"Data merge to {self.file_path}")
+        else:
+            self.raw.save(self.file_path, overwrite=True)
+            print(f"Data saved to {self.file_path}")
+
+        os.remove(self.temp_file)
 
     def run_pipeline(self):
         self.load_data_from_mindrove()

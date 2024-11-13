@@ -15,34 +15,37 @@ from flask_socketio import emit
 
 class LiveClassifier:
     def __init__(self, name: str):
-        model_path = f'./user/{name}'
-        self.Csp_list = [joblib.load(os.path.join(model_path,"csp", f'csp_model_{i}.joblib')) for i in range(8)]
+        model_path = f'./model'
+        self.Csp_list = [joblib.load(os.path.join(model_path,"csp", f'csp_{i}.pkl')) for i in range(8)]
         self.scaler = joblib.load(os.path.join(model_path, 'scaler.pkl'))
-        self.svms = [joblib.load(os.path.join(model_path, "svm", f'svm_model_{i}.joblib')) for i in range(3)]
-        self.classes = ['Fist', 'Thumb', 'Index']
+        self.svms = [joblib.load(os.path.join(model_path, "svm", f'svm_{i}.pkl')) for i in range(5)]
+        self.classes = ['Fist ', 'Index', "Thumb"]
         self.data = []
+        self.message = {
+            "result": "",
+            "accuracy": 0
+        }
         print("Model loaded successfully")
 
     def wpd(self, X):
-        coeffs = pywt.WaveletPacket(X, 'db4', mode='symmetric', maxlevel=5)
+        coeffs = pywt.WaveletPacket(X,'db4',mode='symmetric',maxlevel=4)
         return coeffs
-
+                
     def feature_bands(self, x):
         C = self.wpd(x[0, 0, :])
-        coeffs_sample = [node.data for node in C.get_level(5, 'natural')]
+        coeffs_sample = [node.data for node in C.get_level(4, 'natural')]
         jumlah_koefisien = len(coeffs_sample[0])  
-            
-        Bands = np.empty((8, x.shape[0], x.shape[1], jumlah_koefisien)) 
         
-        for i in range(x.shape[0]):  
-            for ii in range(x.shape[1]):  
+        Bands = np.empty((8,x.shape[0],x.shape[1],jumlah_koefisien)) 
+        
+        for i in range(x.shape[0]):
+            for ii in range(x.shape[1]):
                 pos = []
-                C = self.wpd(x[i, ii, :]) 
-                pos = np.append(pos, [node.path for node in C.get_level(5, 'natural')])
-                
-                for b in range(1, 9):  
-                    Bands[b-1, i, ii, :] = C[pos[b]].data  
-
+                C = self.wpd(x[i,ii,:]) 
+                pos = np.append(pos,[node.path for node in C.get_level(4, 'natural')])
+                for b in range(1,9):
+                    Bands[b-1,i,ii,:] = C[pos[b]].data
+            
         return Bands
     
     def preprocess(self, raw_data):
@@ -63,19 +66,19 @@ class LiveClassifier:
         raw = mne.io.RawArray(df.T, info)
 
         # Apply bandpass filter
+        raw.notch_filter(freqs=50)
         raw.filter(8, 30., fir_design='firwin')
 
         # Create fixed-length events and epochs
-        events = mne.make_fixed_length_events(raw, duration=3.0)
-        epochs = mne.Epochs(raw, events, tmin=1, tmax=4, proj=True, baseline=None, preload=True)
+        events = mne.make_fixed_length_events(raw, duration=4.0)
+        epochs = mne.Epochs(raw, events, tmin=1, tmax=3, proj=True, baseline=None, preload=True)
         
         # Extract data from epochs
-        return epochs.get_data(copy=True)
+        return epochs.get_data()
 
     def classify(self, data):
         # Extract WPD features
         new_data = self.preprocess(data)
-        print(new_data.shape)
         wpd_data = self.feature_bands(new_data)
 
         # Transform data using CSP and scale
@@ -88,15 +91,15 @@ class LiveClassifier:
         # Calculate and accumulate probabilities from each SVM model
         for svm in self.svms:
             prob_sum += svm.predict_proba(scaled_data)[0]
+            print(prob_sum) 
 
         predicted_class_idx = np.argmax(prob_sum)
-        result = self.classes[predicted_class_idx]
+        result = self.classes[predicted_class_idx]  
         message = {
             "result": result,
             "accuracy": prob_sum[predicted_class_idx]
         }
-        emit('result_classification', message, broadcast=True)
-        return result
+        return message
 
 
     def live_classification(self, board_shim: BoardShim):
@@ -107,7 +110,7 @@ class LiveClassifier:
         board_shim.start_stream()
         print("Device ready for live classification")
         
-        end_time = time.time() + 5
+        end_time = time.time() + 4
         sampling_rate = board_shim.get_sampling_rate(board_shim.board_id)
 
         try:
@@ -127,12 +130,12 @@ class LiveClassifier:
                     self.data.append(filtered_data)
                     
             # Perform classification
-            df = pd.concat(self.data)
+            df = pd.concat(self.data)   
             prediction = self.classify(df)
-            print("Predicted Gesture:", prediction)
+            print("Predicted Gesture:", prediction["result"])
+            self.message = prediction
             self.data = []
 
-            time.sleep(10)  
         except MindRoveError as e:
             print("MindRove board error:", e)
         finally:

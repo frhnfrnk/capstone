@@ -1,11 +1,9 @@
 from flask import Blueprint
 from flask_socketio import emit
 from module.CollectDataCalibration import get_datas
-from module.ModelProcessing import EEGModel
+from module.Calibration import CalibrationPipeline
 from module.CreateAnnotation import create_annotation
 import numpy as np
-
-from module.ProcessToRaw import SaveData
 
 
 calibration = Blueprint('calibration', __name__, url_prefix='/api/calibration')
@@ -19,11 +17,11 @@ def calibration_events(socketio, board_shim):
         time = message['time']
         name = message['nama']
         data = get_datas(time, name, board_shim)
+        emit('calibration_started', broadcast=True)
         if data:
             anotate = create_annotation()
-            pipeline = EEGModel(mindrove_data=data, annotations=anotate, name=name)
+            pipeline = CalibrationPipeline(mindrove_data=data, annotations=anotate, name=name)
             pipeline.run_pipeline()
-        emit('calibration_success', broadcast=True)
 
     @socketio.on('stop_calibration')
     def handle_stop_calibration():

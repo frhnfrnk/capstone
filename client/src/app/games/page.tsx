@@ -12,7 +12,7 @@ import Loading from "@/components/Loading";
 import ModalGames from "@/components/ModalGames";
 
 export default function Home() {
-  // const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const [animation, setAnimation] = useState("Stop Animation");
   const [animationTrigger, setAnimationTrigger] = useState(0);
   const [isOpenGuide, setIsOpenGuide] = useState(false);
@@ -32,15 +32,15 @@ export default function Home() {
   const [allScore, setAllScore] = useState<number[]>([]);
 
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
-  const listTarget = ["Fist", "Index", "Thumb"];
+  const listTarget = ["Fist ", "Index", "Thumb"];
   const [socket, setSocket] = useState<Socket | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [showVideo, setShowVideo] = useState(true);
+  const [showVideo, setShowVideo] = useState(false);
 
   const video = [
-    { name: "Fist", src: "./stimulus/OpenFist.mp4" },
+    { name: "Fist ", src: "./stimulus/OpenFist.mp4" },
     { name: "Index", src: "./stimulus/Index.mp4" },
     { name: "Thumb", src: "./stimulus/Thumb.mp4" },
   ];
@@ -65,14 +65,14 @@ export default function Home() {
       console.log("Socket connected");
     });
 
-    newSocket.on("classification_progress", (message) => {
-      console.log("Received classification:", message.data);
-      setAnimation(message.data);
-      setResultClassify({
-        result: message.data,
-        score: message.accuration,
-      });
+    newSocket.on("result_classification", (message) => {
+      console.log("Received classification:", message);
+      setAnimation(message.result);
       setAnimationTrigger(Date.now());
+      setResultClassify({
+        result: message.result,
+        score: message.accuracy,
+      });
     });
 
     newSocket.on("classification_stopped", () => {
@@ -86,8 +86,13 @@ export default function Home() {
   }, [SOCKET_SERVER_URL]);
 
   const startClassify = () => {
+    setShowVideo(true);
+    const user = searchParams.get("user") || "Anonymous";
+    const message = {
+      nama: user,
+    };
     if (socket) {
-      socket.emit("start_classification");
+      socket.emit("start_classification", message);
       setDone(false);
       setStart(true);
       setTryCount(0);
@@ -98,6 +103,7 @@ export default function Home() {
   };
 
   const openScore = (index?: any) => {
+    console.log("Index Selanjutnya", index);
     if (index >= listTarget.length) {
       setTarget("");
       setIsOpenScore(true);
@@ -110,6 +116,9 @@ export default function Home() {
   const stopClassify = () => {
     const socket = io(SOCKET_SERVER_URL);
     socket.emit("stop_classification");
+
+    setAnimation("Stop Animation");
+    setAnimationTrigger(0);
 
     setStart(false);
   };
@@ -155,14 +164,14 @@ export default function Home() {
         setIndexTarget(indexTarget + 1);
         setAllScore([...allScore, resultClassify.score]);
         setTimeout(() => {
-          openScore(indexTarget + 1);
           stopClassify();
+          openScore(indexTarget + 1);
         }, 3000);
       }
       setTotalTryCount(totalTryCount + 1);
       setTryCount(tryCount + 1);
     }
-  }, [resultClassify]);
+  }, [animationTrigger]);
 
   useEffect(() => {
     if (indexTarget >= listTarget.length) {

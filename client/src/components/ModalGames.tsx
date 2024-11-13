@@ -33,8 +33,6 @@ const ModalGames = ({
 
   const listImage = [
     "./movement/fist.jpg",
-    "./movement/hook.jpg",
-    "./movement/open.jpg",
     "./movement/index.jpg",
     "./movement/thumb.jpg",
   ];
@@ -97,9 +95,13 @@ const ModalGames = ({
         )}
         {!done && (
           <img
-            src={listImage.find((item) =>
-              item.includes(nextTarget.toLowerCase())
-            )}
+            src={listImage.find((item) => {
+              if (nextTarget === "Fist ") {
+                return item === "./movement/fist.jpg";
+              } else {
+                return item.includes(nextTarget.toLowerCase());
+              }
+            })}
             alt={nextTarget}
             className="w-full h-40 object-cover rounded-lg shadow-md mb-3"
           />

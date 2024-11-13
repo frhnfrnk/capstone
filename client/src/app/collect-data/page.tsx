@@ -16,7 +16,7 @@ const Calibration = () => {
   const [result, setResult] = useState<any>(null);
   const [status, setStatus] = useState<string[]>([]);
 
-  const video = "./calibration/Full3.mp4";
+  const video = "./calibration/aa.mp4";
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
   useEffect(() => {
@@ -27,9 +27,12 @@ const Calibration = () => {
       setStatus(["Data sudah diterima", "Sedang menyimpan data..."]);
     });
 
-    socket.on("data_saved", (message) => {
+    socket.on("collect_data_success", (message) => {
       console.log("Data saved");
       setStatus(["Data sudah disimpan", " "]);
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     });
 
     socket.on("collcet_data_done", (message) => {
@@ -56,7 +59,7 @@ const Calibration = () => {
       time: 210,
       nama: name,
     };
-    socket.emit("start_calibration", message);
+    socket.emit("start_collect_data", message);
   };
 
   const handleVideoEnded = () => {

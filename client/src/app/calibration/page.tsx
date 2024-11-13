@@ -13,50 +13,32 @@ const Calibration = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [result, setResult] = useState<any>(null);
   const [status, setStatus] = useState<string[]>([]);
+  const [videoStarted, setVideoStarted] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(true);
 
-  const video = "./calibration/Full2.mp4";
+  const video = "./calibration/aa.mp4";
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL);
 
-    socket.on("calibration_started", () => {
-      console.log("Calibration has started");
-    });
-
-    socket.on("calibration_ended", (time) => {
-      setElapsedTime(time);
-      console.log("Calibration ended. Time taken:", time);
-    });
-
-    socket.on("calibration_progress", () => {
-      console.log("Calibration has been progressed");
-    });
-
     socket.on("calibration_success", () => {
-      console.log("Calibration success");
-    });
-
-    socket.on("get_data", () => {
-      console.log("Data received");
-      setStatus(["Data sudah diterima", "Sedang memproses data..."]);
-    });
-
-    socket.on("preprocess_data", (message) => {
-      console.log("Data preprocessed");
-      setStatus(["Data sudah diproses", "Sedang membuat model..."]);
-    });
-
-    socket.on("calibration_done", (message) => {
-      console.log("Calibration Done");
-      setResult(message);
       setIsLoading(false);
+      setIsSuccess(true);
     });
 
-    socket.on("testing_progress", (message) => {
-      console.log(message);
+    socket.on("calibration_failed", () => {
+      setIsLoading(false);
+      setIsSuccess(false);
+    });
+
+    socket.on("calibration_started", () => {
+      setStatus(["Kalibrasi telah selesai", "Memuat data..."]);
+    });
+
+    socket.on("reference_loaded", () => {
+      setStatus(["Data berhasil dimuat", "Memulai kalibrasi..."]);
     });
 
     return () => {
@@ -70,7 +52,7 @@ const Calibration = () => {
         console.error("Error attempting to play the video:", error);
       });
       videoRef.current.requestFullscreen().catch((error) => {
-        console.error("Error attempting to request fullscreen:", error);
+        console.error("Error attempting to enter fullscreen:", error);
       });
     }
     const socket = io(SOCKET_SERVER_URL);
@@ -102,8 +84,8 @@ const Calibration = () => {
         setIsOpen={setResultOpen}
         name={name}
         isLoading={isLoading}
-        result={result}
         status={status}
+        isSuccess={isSuccess}
       />
 
       <div className="h-screen flex flex-col justify-center items-center bg-gray-100">
@@ -120,7 +102,7 @@ const Calibration = () => {
           onClick={handleStart}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-4 mt-4"
         >
-          Mulai
+          {videoStarted ? "Restart" : "Start"}
         </button>
 
         {elapsedTime > 0 && (
