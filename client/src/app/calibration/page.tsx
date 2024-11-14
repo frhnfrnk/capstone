@@ -16,6 +16,7 @@ const Calibration = () => {
   const [status, setStatus] = useState<string[]>([]);
   const [videoStarted, setVideoStarted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(true);
+  const [result, setResult] = useState({});
 
   const video = "./calibration/aa.mp4";
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
@@ -23,14 +24,20 @@ const Calibration = () => {
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL);
 
-    socket.on("calibration_success", () => {
+    socket.on("calibration_done", (message) => {
       setIsLoading(false);
       setIsSuccess(true);
+      setResult(message);
     });
 
-    socket.on("calibration_failed", () => {
+    socket.on("calibration_failed", (message) => {
+      console.log("Calibration failed:", message);
       setIsLoading(false);
       setIsSuccess(false);
+    });
+
+    socket.on("check_success", (message) => {
+      console.log("Check success", message);
     });
 
     socket.on("calibration_started", () => {
@@ -39,6 +46,10 @@ const Calibration = () => {
 
     socket.on("reference_loaded", () => {
       setStatus(["Data berhasil dimuat", "Memulai kalibrasi..."]);
+    });
+
+    socket.on("preprocess_data", () => {
+      setStatus(["Data berhasil diproses", "Menyesuaikan model..."]);
     });
 
     return () => {
@@ -86,6 +97,7 @@ const Calibration = () => {
         isLoading={isLoading}
         status={status}
         isSuccess={isSuccess}
+        result={result}
       />
 
       <div className="h-screen flex flex-col justify-center items-center bg-gray-100">

@@ -23,6 +23,7 @@ class EEGModel:
         self.annotations = annotations
         self.sfreq = sfreq
         self.raw = None
+        self.fullRaw = None
         self.epochs = None
         self.data = None
         self.labels = None
@@ -41,6 +42,21 @@ class EEGModel:
             "ka": [],
         }
 
+    def load_old_data(self):
+        raw_old = mne.io.read_raw_fif("./reference/datafarhan.fif", preload=True)
+        raw_old.notch_filter(freqs=50)
+        raw_old.filter(8, 30., fir_design='firwin')
+
+        data = raw_old.get_data()
+        sfreq = self.sfreq
+        ch_names = ["CH1", "CH2", "CH3", "CH4"]
+
+        info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types="eeg")
+        raw_reference = mne.io.RawArray(data, info)
+
+        #concanate data
+        self.fullRaw = mne.concatenate_raws([raw_reference, self.raw])
+
     def load_data_from_mindrove(self):
         """Load data from MindRove into MNE Raw format."""
         if not self.mindrove_data:
@@ -54,6 +70,10 @@ class EEGModel:
         info = mne.create_info(ch_names=ch_names, sfreq=self.sfreq, ch_types="eeg")
         eeg_data = mindrove_df[ch_names].values.T
         self.raw = mne.io.RawArray(eeg_data, info)
+
+        self.raw.notch_filter(freqs=50)
+        self.raw.filter(8, 30., fir_design='firwin')
+
         print("MindRove data loaded into MNE format.")
 
     def add_annotations(self):
@@ -75,19 +95,15 @@ class EEGModel:
 
     def preprocess_data(self):
         """Apply filters and segment data based on annotations to create epochs."""
-        if not self.raw:
+        if not self.fullRaw:
             print("No data to preprocess.")
             return
 
-        # Filter settings
-        self.raw.notch_filter(freqs=50)
-        self.raw.filter(8, 30., fir_design='firwin')
-
         # Convert annotations to events and create epochs
-        picks_raw = mne.pick_types(self.raw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')  
-        events, event_id = mne.events_from_annotations(self.raw)
-        tmin, tmax = 1.0, 4
-        self.epochs = mne.Epochs(self.raw, events, event_id, tmin, tmax, baseline=None, preload=True, picks=picks_raw)
+        picks_raw = mne.pick_types(self.fullRaw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')  
+        events, event_id = mne.events_from_annotations(self.fullRaw)
+        tmin, tmax = 0, 3
+        self.epochs = mne.Epochs(self.fullRaw, events, event_id, tmin, tmax, baseline=None, preload=True, picks=picks_raw)
         emit('preprocess_data', broadcast=True)
         print("Data preprocessed and epochs created.")
 
@@ -98,13 +114,13 @@ class EEGModel:
         
         def wpd(X):
             """Wavelet Packet Decomposition using 'db4' wavelet."""
-            coeffs = pywt.WaveletPacket(X, 'db4', mode='symmetric', maxlevel=5)
+            coeffs = pywt.WaveletPacket(X, 'db4', mode='symmetric', maxlevel=4)
             return coeffs
 
         def feature_bands(x):
             """Extracts 8 frequency bands from each signal."""
             C = wpd(x[0, 0, :])
-            coeffs_sample = [node.data for node in C.get_level(5, 'natural')]
+            coeffs_sample = [node.data for node in C.get_level(4, 'natural')]
             num_coeffs = len(coeffs_sample[0])
             
             # Initialize Bands array
@@ -114,7 +130,7 @@ class EEGModel:
             for i in range(x.shape[0]):
                 for ii in range(x.shape[1]):
                     C = wpd(x[i, ii, :])
-                    pos = [node.path for node in C.get_level(5, 'natural')]
+                    pos = [node.path for node in C.get_level(4, 'natural')]
                     for b in range(1, 9):
                         Bands[b - 1, i, ii, :] = C[pos[b]].data
                         
@@ -145,7 +161,7 @@ class EEGModel:
 
         # Initialize CSP
         Csp = [
-            CSP(n_components=3, reg='ledoit_wolf', log=False, norm_trace=False)
+            CSP(n_components=3, reg=None, log=False, norm_trace=False)
             for _ in range(wpd_data_train.shape[0])
         ]
 
@@ -165,14 +181,14 @@ class EEGModel:
 
         # Grid search for hyperparameters
         param_grid = {
-            'estimator__estimator__C': [0.01, 0.1, 1, 10, 100], 
-            'estimator__estimator__gamma': [0.001, 0.01, 0.1, 1, 10],
+            'estimator__estimator__C': [0.01,0.1, 0.5, 0.8, 1, 1.1],
+            'estimator__estimator__gamma': [0.01,0.9, 1, 1.1, 1.2],
         }
 
         svms = []
 
         # Initialize Stratified KFold
-        cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
         for train_idx, val_idx in cv.split(X_full_train, labels_train):
             X_train, X_val = X_full_train[train_idx], X_full_train[val_idx]
@@ -237,7 +253,7 @@ class EEGModel:
 
 
         for i, svm in enumerate(svms):
-            svm_file_name = os.path.join(directory_svm, f'svm_model_{i}.joblib')
+            svm_file_name = os.path.join(directory_svm, f'svm_{i}.pkl')
             joblib.dump(svm, svm_file_name)
 
         file_name_ss = os.path.join(directory, 'scaler.pkl')
@@ -245,7 +261,7 @@ class EEGModel:
         joblib.dump(ss, file_name_ss)
 
         for i, csp_model in enumerate(Csp):
-            csp_file_name = os.path.join(directory_csp, f'csp_model_{i}.joblib')
+            csp_file_name = os.path.join(directory_csp, f'csp_{i}.pkl')
             joblib.dump(csp_model, csp_file_name)
             
         print(f"Model saved to {directory_svm}.")
@@ -267,12 +283,13 @@ class EEGModel:
             "test": self.test_result
         }
 
-        emit('calibration_done',message,  broadcast=True)
+        emit('calibration_done', message,  broadcast=True)
         
 
     def run_pipeline(self):
         self.load_data_from_mindrove()
         self.add_annotations()
+        self.load_old_data()
         self.preprocess_data()
         self.extract_features()
         self.train_model()

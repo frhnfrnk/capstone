@@ -3,6 +3,7 @@ from flask_socketio import emit
 from module.CollectDataCalibration import get_datas
 from module.Calibration import CalibrationPipeline
 from module.CreateAnnotation import create_annotation
+from module.ModelProcessing import EEGModel
 import numpy as np
 
 
@@ -21,7 +22,11 @@ def calibration_events(socketio, board_shim):
         if data:
             anotate = create_annotation()
             pipeline = CalibrationPipeline(mindrove_data=data, annotations=anotate, name=name)
-            pipeline.run_pipeline()
+            check = pipeline.run_pipeline()
+
+            if check:
+                model = EEGModel(mindrove_data=data, annotations=anotate, name=name)
+                model.run_pipeline()
 
     @socketio.on('stop_calibration')
     def handle_stop_calibration():

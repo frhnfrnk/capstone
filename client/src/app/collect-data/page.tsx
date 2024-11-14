@@ -83,8 +83,9 @@ const Calibration = () => {
         setIsOpen={setResultOpen}
         name={name}
         isLoading={isLoading}
-        result={result}
         status={status}
+        isSuccess={false}
+        result={result}
       />
 
       <div className="h-screen flex flex-col justify-center items-center bg-gray-100">

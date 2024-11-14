@@ -10,6 +10,7 @@ interface ModalCalibrationResultProps {
   isLoading: boolean;
   status: string[];
   isSuccess: boolean;
+  result: any;
 }
 
 const ModalCalibrationResult = ({
@@ -19,6 +20,7 @@ const ModalCalibrationResult = ({
   isLoading,
   status,
   isSuccess,
+  result,
 }: ModalCalibrationResultProps) => {
   if (!isOpen) return null;
   const [isModeOpen, setIsModeOpen] = useState(false);
@@ -47,10 +49,6 @@ const ModalCalibrationResult = ({
       );
       router.push(`/`);
     }
-  };
-
-  const handleCancelMode = () => {
-    setIsModeOpen(false);
   };
 
   const handleOutsideClick = (event: React.MouseEvent) => {
@@ -124,6 +122,30 @@ const ModalCalibrationResult = ({
                   <h2 className="font-mono text-2xl font-bold text-center text-green-600 mb-4">
                     🎉 Kalibrasi Berhasil!
                   </h2>
+
+                  <div className="bg-gray-100 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-lg text-gray-800 mb-2">
+                      Hasil Kalibrasi
+                    </h3>
+                    <ul className="text-gray-600 space-y-2">
+                      <li>
+                        <span className="font-semibold">Akurasi:</span>{" "}
+                        {result.test.accuracy}%
+                      </li>
+                      <li>
+                        <span className="font-semibold">Presisi:</span>{" "}
+                        {result.test.precision}%
+                      </li>
+                      <li>
+                        <span className="font-semibold">Recall:</span>{" "}
+                        {result.test.recall}%
+                      </li>
+                      <li>
+                        <span className="font-semibold">KA Score:</span>{" "}
+                        {result.test.kaScore}
+                      </li>
+                    </ul>
+                  </div>
 
                   <p className="text-center text-gray-700 mb-6">
                     Anda telah berhasil melakukan kalibrasi. Silakan klik tombol

@@ -102,13 +102,6 @@ export default function Home() {
             trigger={trigger}
           />
           <Lights />
-          <spotLight
-            position={[5, 5, 5]}
-            angle={0.3}
-            intensity={1}
-            penumbra={0.5}
-            castShadow
-          />
           <Environment preset="sunset" />
         </Canvas>
 

@@ -34,8 +34,10 @@ class CalibrationPipeline:
         self.thumb_ref_mean = []
         self.index_ref_mean = []
 
+        self.isCheck = False
+
     def load_reference_data(self):
-        self.raw_reference = mne.io.read_raw_edf("./reference/reference_raw.fif", preload=True)
+        self.raw_reference = mne.io.read_raw_fif("./reference/reference_raw.fif", preload=True)
         self.raw_reference.notch_filter(freqs=50)
         self.raw_reference.filter(8, 30., fir_design='firwin')
 
@@ -120,14 +122,21 @@ class CalibrationPipeline:
         thumb_distance = np.linalg.norm(self.thumb_mean - self.thumb_ref_mean)
         index_distance = np.linalg.norm(self.index_mean - self.index_ref_mean)
 
-        fist_treshold = 2
-        thumb_treshold = 7
-        index_treshold = 7.2
+        fist_treshold = 2.5
+        thumb_treshold = 7.5
+        index_treshold = 7.7
 
+        message = {
+            "fist_distance": fist_distance,
+            "thumb_distance": thumb_distance,
+            "index_distance": index_distance
+        }
         if fist_distance < fist_treshold and thumb_distance < thumb_treshold and index_distance < index_treshold:
-            emit('calibration_success', broadcast=True)
+            self.isCheck = True
+            emit('check_success', message, broadcast=True)
         else:
-            emit('calibration_failed', broadcast=True)
+            emit('calibration_failed', message, broadcast=True)
+            self.isCheck = False
 
     def run_pipeline(self):
         self.load_reference_data()
@@ -135,3 +144,6 @@ class CalibrationPipeline:
         self.add_annotations()
         self.preprocess_data()
         self.get_movement_data()
+        self.check_distance()
+
+        return self.isCheck
