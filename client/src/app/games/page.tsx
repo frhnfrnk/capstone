@@ -28,11 +28,13 @@ export default function Home() {
     score: 0,
   });
 
+  const [isAudioOn, setIsAudioOn] = useState(false);
+
   const [totalTryCount, setTotalTryCount] = useState(0);
   const [allScore, setAllScore] = useState<number[]>([]);
 
   const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
-  const listTarget = ["Fist ", "Index", "Thumb"];
+  const listTarget = ["Fist", "Index", "Thumb"];
   const [socket, setSocket] = useState<Socket | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -40,7 +42,7 @@ export default function Home() {
   const [showVideo, setShowVideo] = useState(false);
 
   const video = [
-    { name: "Fist ", src: "./stimulus/OpenFist.mp4" },
+    { name: "Fist", src: "./stimulus/OpenFist.mp4" },
     { name: "Index", src: "./stimulus/Index.mp4" },
     { name: "Thumb", src: "./stimulus/Thumb.mp4" },
   ];
@@ -181,6 +183,16 @@ export default function Home() {
     }
   }, [indexTarget]);
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   return (
     <Suspense
       fallback={
@@ -200,15 +212,9 @@ export default function Home() {
             trigger={animationTrigger}
           />
           <Lights />
-          <spotLight
-            position={[5, 5, 5]}
-            angle={0.3}
-            intensity={1}
-            penumbra={0.5}
-            castShadow
-          />
-          <Environment preset="sunset" />
         </Canvas>
+
+        <audio id="audio" ref={audioRef} src="/audio/audio.MP3" controls />
 
         <ModalGuide
           isOpen={isOpenGuide}
@@ -216,6 +222,8 @@ export default function Home() {
           start={() => {
             openScore(0);
           }}
+          setIsAudioOn={setIsAudioOn}
+          isAudioOn={isAudioOn}
         />
 
         <ModalGames
@@ -258,7 +266,7 @@ export default function Home() {
               ref={videoRef}
               src={video[currentVideoIndex].src}
               className="
-                  w-full max-w-xs rounded-lg
+                  w-full max-w-lg rounded-lg
                   transition-opacity duration-500 transform
                   opacity-100 translate-y-0
                 "

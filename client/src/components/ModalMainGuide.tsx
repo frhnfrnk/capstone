@@ -8,9 +8,17 @@ interface ModalGuideProps {
   setIsOpen: (value: boolean) => void;
   isOpen: boolean;
   start: () => void;
+  setIsAudioOn: (value: boolean) => void;
+  isAudioOn: boolean;
 }
 
-const ModalGuide = ({ setIsOpen, isOpen, start }: ModalGuideProps) => {
+const ModalGuide = ({
+  setIsOpen,
+  isOpen,
+  start,
+  setIsAudioOn,
+  isAudioOn,
+}: ModalGuideProps) => {
   if (!isOpen) return null;
 
   const onClose = () => {
@@ -68,11 +76,22 @@ const ModalGuide = ({ setIsOpen, isOpen, start }: ModalGuideProps) => {
           <img
             src="/guide/relax.jpg"
             alt="Relax and Focus"
-            className="my-4 w-[90%] rounded-lg shadow-md"
+            className="my-4 w-[80%] rounded-lg shadow-md"
           />
           <p className="text-lg text-gray-600 text-center">
             Santai dan fokuskan pikiran Anda pada objek yang ditampilkan.
           </p>
+          <label className="flex items-center gap-2 userSelect">
+            <input
+              type="checkbox"
+              onChange={(e) => setIsAudioOn(e.target.checked)}
+              checked={isAudioOn}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span className="text-lg text-gray-700">
+              Gunakan musik untuk membantu konsentrasi
+            </span>
+          </label>
           <button
             onClick={onClose}
             className="mt-4 px-8 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out"

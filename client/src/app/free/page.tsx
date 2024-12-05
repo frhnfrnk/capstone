@@ -27,6 +27,8 @@ export default function Home() {
 
   const searchParams = useSearchParams();
 
+  const [isAudioOn, setIsAudioOn] = useState(false);
+
   const video = [
     { name: "Fist", src: "./stimulus/OpenFist.mp4" },
     { name: "Index", src: "./stimulus/Index.mp4" },
@@ -56,7 +58,8 @@ export default function Home() {
     socket.on("result_classification", (message) => {
       console.log("Result classification:", message);
       setAnimation(message.result);
-      setAccuracy(message.accuracy);
+      let temp = message.accuracy * 25;
+      setAccuracy(temp);
       setTrigger(Date.now());
     });
 
@@ -83,6 +86,16 @@ export default function Home() {
     setStart(false);
   };
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   return (
     <Suspense
       fallback={
@@ -102,13 +115,16 @@ export default function Home() {
             trigger={trigger}
           />
           <Lights />
-          <Environment preset="sunset" />
+          <Environment files="/models/venice_sunset_1k.hdr" />
         </Canvas>
+        <audio id="audio" ref={audioRef} src="/audio/audio.MP3" controls />
 
         <ModalGuide
           isOpen={isOpen}
           setIsOpen={setIsOpen}
           start={startClassify}
+          setIsAudioOn={setIsAudioOn}
+          isAudioOn={isAudioOn}
         />
 
         <div className="absolute bottom-5 left-0 right-0 flex justify-center mb-4">
@@ -117,8 +133,7 @@ export default function Home() {
             <strong>{animation !== "Stop Animation" ? animation : ""}</strong>
           </p>
           <p className="px-6 py-2 text-black rounded-lg text-lg">
-            Accuracy:{" "}
-            <strong>{accuracy !== 0 ? accuracy.toString() : ""}</strong>
+            Score: <strong>{accuracy !== 0 ? accuracy.toString() : ""}</strong>
           </p>
         </div>
 
@@ -162,7 +177,7 @@ export default function Home() {
               ref={videoRef}
               src={video[currentVideoIndex].src}
               className="
-                  w-full max-w-xs rounded-lg
+                  w-full max-w-lg rounded-lg
                   transition-opacity duration-500 transform
                   opacity-100 translate-y-0
                 "

@@ -15,17 +15,29 @@ from flask_socketio import emit
 
 class LiveClassifier:
     def __init__(self, name: str):
-        model_path = f'./model'
-        self.Csp_list = [joblib.load(os.path.join(model_path,"csp", f'csp_{i}.pkl')) for i in range(8)]
-        self.scaler = joblib.load(os.path.join(model_path, 'scaler.pkl'))
-        self.svms = [joblib.load(os.path.join(model_path, "svm", f'svm_{i}.pkl')) for i in range(5)]
-        self.classes = ['Fist ', 'Index', "Thumb"]
+        self.model_path = f'./model'
+        self.name = name
+        self.Csp_list = None
+        self.scaler = None
+        self.svms = None
+        self.classes = ['Fist', 'Index', "Thumb"]
         self.data = []
         self.message = {
             "result": "",
             "accuracy": 0
         }
         print("Model loaded successfully")
+
+    def load_model(self):
+        if self.name == "farhan":
+            self.Csp_list = [joblib.load(os.path.join(self.model_path,"csp", f'csp_{i}.pkl')) for i in range(8)]
+            self.svms = [joblib.load(os.path.join(self.model_path, "svm", f'svm_{i}.pkl')) for i in range(5)]
+            self.scaler = joblib.load(os.path.join(self.model_path, 'scaler.pkl'))
+        else:
+            path_loc = f'./user/{self.name}'
+            self.Csp_list = [joblib.load(os.path.join(path_loc,"csp", f'csp_{i}.pkl')) for i in range(8)]
+            self.svms = [joblib.load(os.path.join(path_loc, "svm", f'svm_{i}.pkl')) for i in range(5)]
+            self.scaler = joblib.load(os.path.join(path_loc, 'scaler.pkl'))
 
     def wpd(self, X):
         coeffs = pywt.WaveletPacket(X,'db4',mode='symmetric',maxlevel=4)
@@ -70,7 +82,7 @@ class LiveClassifier:
         raw.filter(8, 30., fir_design='firwin')
 
         # Create fixed-length events and epochs
-        events = mne.make_fixed_length_events(raw, duration=4.0)
+        events = mne.make_fixed_length_events(raw, duration=3.1)
         epochs = mne.Epochs(raw, events, tmin=1, tmax=3, proj=True, baseline=None, preload=True)
         
         # Extract data from epochs
@@ -104,6 +116,8 @@ class LiveClassifier:
 
     def live_classification(self, board_shim: BoardShim):
         channel_indices = [0, 1, 2, 3]
+
+        self.load_model()
         
         if not board_shim.is_prepared():
             board_shim.prepare_session()
